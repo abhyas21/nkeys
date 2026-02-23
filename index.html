@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>nkeys - Animated Ecommerce</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#">nkeys</a>
+    <nav>
+      <a href="#products">Products</a>
+      <a href="#collections">Collections</a>
+      <a href="#about">About</a>
+    </nav>
+    <div class="header-actions">
+      <span id="sessionUser" class="session-user"></span>
+      <button id="loginBtn" class="btn btn-secondary auth-btn" type="button">Login</button>
+      <button id="logoutBtn" class="btn btn-secondary auth-btn" type="button" hidden>Logout</button>
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">Cart <span id="cartCount">0</span></button>
+    </div>
+  </header>
+
+  <div id="loginModal" class="auth-modal" aria-hidden="true">
+    <form id="loginForm" class="auth-card">
+      <div class="auth-head">
+        <h3>Login</h3>
+        <button id="closeLoginModal" type="button" class="btn btn-secondary auth-btn">Close</button>
+      </div>
+      <label>
+        Name
+        <input id="loginName" name="name" type="text" required />
+      </label>
+      <label>
+        Email
+        <input id="loginEmail" name="email" type="email" required />
+      </label>
+      <label>
+        Phone Number
+        <input id="loginPhone" name="phone" type="tel" required />
+      </label>
+      <div class="verify-row">
+        <button id="verifyEmailBtn" class="btn btn-secondary auth-btn" type="button">Verify with Email</button>
+        <button id="verifyPhoneBtn" class="btn btn-secondary auth-btn" type="button">Verify with Phone</button>
+      </div>
+      <label>
+        Verification Code
+        <input id="loginCode" name="code" type="text" required />
+      </label>
+      <button id="confirmCodeBtn" class="btn btn-secondary" type="button">Confirm Code</button>
+      <button class="btn btn-primary" type="submit">Continue</button>
+      <p class="auth-hint">No password required. Verify by email or phone to login.</p>
+      <p id="loginMessage" class="owner-message" aria-live="polite"></p>
+    </form>
+  </div>
+
+  <aside id="cartDrawer" class="cart-drawer" aria-hidden="true">
+    <div class="cart-head">
+      <h3>Your Cart</h3>
+      <button id="closeCartBtn" class="btn btn-secondary" type="button">Close</button>
+    </div>
+    <div id="cartList" class="cart-list"></div>
+    <p id="cartEmpty" class="cart-empty">Your cart is empty.</p>
+    <div class="cart-footer">
+      <p>Total: <strong id="cartTotal">$0.00</strong></p>
+      <button id="checkoutBtn" class="btn btn-primary" type="button">Checkout</button>
+    </div>
+  </aside>
+  <div id="cartBackdrop" class="cart-backdrop" aria-hidden="true"></div>
+
+  <main>
+    <section class="hero reveal">
+      <div>
+        <p class="eyebrow">Spring 2026 Drop</p>
+        <h1>Shop the future of everyday essentials.</h1>
+        <p class="hero-copy">Bold design, breathable comfort, and premium materials for people who move fast.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#products">Shop Now</a>
+          <a class="btn btn-secondary" href="#collections">See Collection</a>
+        </div>
+      </div>
+      <div class="hero-card float">
+        <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80" alt="Featured product" />
+      </div>
+    </section>
+
+    <section id="collections" class="collections reveal">
+      <article>
+        <h3>Urban Flow</h3>
+        <p>Clean lines and lightweight layers for daily city movement.</p>
+      </article>
+      <article>
+        <h3>Studio Core</h3>
+        <p>Soft textures and stretch-fit silhouettes made to flex.</p>
+      </article>
+      <article>
+        <h3>Night Shift</h3>
+        <p>Reflective accents and performance blends for after-hours energy.</p>
+      </article>
+    </section>
+
+    <section id="products" class="products">
+      <div class="section-head reveal">
+        <p class="eyebrow">Featured Products</p>
+        <h2>Best sellers this week</h2>
+      </div>
+      <div class="product-grid" id="productGrid"></div>
+    </section>
+
+    <section id="owner" class="owner-panel reveal">
+      <div class="owner-head">
+        <p class="eyebrow">Owner Product Entry</p>
+        <h2>Add a new product</h2>
+      </div>
+      <p id="ownerLockMessage" class="owner-lock-message">Login as owner to add or delete products.</p>
+      <form id="ownerForm" class="owner-form">
+        <label>
+          Product name
+          <input id="productName" name="productName" type="text" required />
+        </label>
+        <label>
+          Product price
+          <input id="productPrice" name="productPrice" type="text" placeholder="$79" required />
+        </label>
+        <label class="owner-full">
+          Product details
+          <textarea id="productDetails" name="productDetails" rows="3" required></textarea>
+        </label>
+        <label class="owner-full">
+          Product image URL
+          <input id="productImageUrl" name="productImageUrl" type="url" placeholder="https://example.com/image.jpg" />
+        </label>
+        <label class="owner-full">
+          Or upload image
+          <input id="productImageFile" name="productImageFile" type="file" accept="image/*" />
+        </label>
+        <button class="btn btn-primary owner-full" type="submit">Add Product</button>
+        <p id="ownerMessage" class="owner-message owner-full" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="about" class="about reveal">
+      <div>
+        <p class="eyebrow">Why nkeys</p>
+        <h2>Built for comfort, styled for impact.</h2>
+      </div>
+      <p>Every piece in our catalog is tested for all-day wear, crafted in limited runs, and delivered with carbon-aware packaging.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer reveal">
+    <p>2026 nkeys. Crafted for modern motion.</p>
+  </footer>
+
+  <template id="productTemplate">
+    <article class="product-card reveal">
+      <div class="img-wrap">
+        <img alt="" loading="lazy" />
+      </div>
+      <h3></h3>
+      <p class="details"></p>
+      <p class="price"></p>
+      <div class="card-actions">
+        <button class="btn btn-primary add-btn">Add to Cart</button>
+        <button class="btn btn-danger delete-btn" type="button">Delete</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
