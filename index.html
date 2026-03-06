@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>nkeys - Animated Ecommerce</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Syne:wght@700;800&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <div class="bg-orb orb-1"></div>
   <div class="bg-orb orb-2"></div>
@@ -24,7 +28,7 @@
       <span id="sessionUser" class="session-user"></span>
       <button id="loginBtn" class="btn btn-secondary auth-btn" type="button">Login</button>
       <button id="logoutBtn" class="btn btn-secondary auth-btn" type="button" hidden>Logout</button>
-      <button class="cart-btn" id="cartBtn" aria-label="Cart">Cart <span id="cartCount">0</span></button>
+      <button class="cart-btn" id="cartBtn" type="button" aria-label="Cart">Cart <span id="cartCount">0</span></button>
     </div>
   </header>
 
@@ -61,6 +65,127 @@
     </form>
   </div>
 
+  <div id="checkoutModal" class="auth-modal" aria-hidden="true">
+    <form id="checkoutForm" class="auth-card checkout-card">
+      <div class="auth-head">
+        <h3>Checkout Details</h3>
+        <button id="closeCheckoutModal" type="button" class="btn btn-secondary auth-btn">Close</button>
+      </div>
+
+      <div class="checkout-grid">
+        <label>
+          First Name
+          <input id="checkoutFirstName" name="firstName" type="text" required />
+        </label>
+        <label>
+          Last Name (Optional)
+          <input id="checkoutLastName" name="lastName" type="text" />
+        </label>
+
+        <label class="checkout-span-2">
+          Phone Number
+          <div class="checkout-inline">
+            <input id="checkoutPhone" name="phone" type="tel" placeholder="+91 9876543210" required />
+            <button id="sendPhoneOtpBtn" class="btn btn-secondary auth-btn" type="button">Send OTP</button>
+          </div>
+          <div class="checkout-inline">
+            <input id="checkoutPhoneOtp" name="phoneOtp" type="text" inputmode="numeric" placeholder="Enter phone OTP" />
+            <button id="verifyPhoneOtpBtn" class="btn btn-secondary auth-btn" type="button">Verify OTP</button>
+          </div>
+          <p id="phoneOtpMessage" class="owner-message" aria-live="polite"></p>
+        </label>
+
+        <label class="checkout-span-2">
+          Email ID
+          <div class="checkout-inline">
+            <input id="checkoutEmail" name="email" type="email" required />
+            <button id="sendEmailOtpBtn" class="btn btn-secondary auth-btn" type="button">Send OTP</button>
+          </div>
+          <div class="checkout-inline">
+            <input id="checkoutEmailOtp" name="emailOtp" type="text" inputmode="numeric" placeholder="Enter email OTP" />
+            <button id="verifyEmailOtpBtn" class="btn btn-secondary auth-btn" type="button">Verify OTP</button>
+          </div>
+          <p id="emailOtpMessage" class="owner-message" aria-live="polite"></p>
+        </label>
+
+        <label>
+          Country (from phone)
+          <input id="checkoutCountry" name="country" type="text" readonly />
+        </label>
+        <label>
+          State
+          <select id="checkoutState" name="state" required></select>
+        </label>
+        <label>
+          District
+          <select id="checkoutDistrict" name="district" required></select>
+        </label>
+        <label>
+          Postal Code
+          <input id="checkoutPostalCode" name="postalCode" type="text" required />
+        </label>
+        <label class="checkout-span-2">
+          Flat, House No., Building, Company, Apartment
+          <input id="checkoutAddressLine1" name="addressLine1" type="text" required />
+        </label>
+        <label class="checkout-span-2">
+          Area, Street, Sector, Village
+          <input id="checkoutAddressLine2" name="addressLine2" type="text" required />
+        </label>
+        <label class="checkout-span-2">
+          Landmark
+          <input id="checkoutLandmark" name="landmark" type="text" />
+        </label>
+
+        <fieldset class="checkout-payment checkout-span-2">
+          <legend>Payment</legend>
+          <label>
+            Payment Method
+            <select id="checkoutPaymentMethod" name="paymentMethod" required>
+              <option value="">Select payment method</option>
+              <option value="card">Credit or Debit Card</option>
+              <option value="upi">UPI</option>
+              <option value="cod">Cash on Delivery</option>
+            </select>
+          </label>
+
+          <div id="paymentCardFields" class="payment-fields" hidden>
+            <label class="payment-full">
+              Cardholder Name
+              <input id="checkoutCardHolder" name="cardHolder" type="text" autocomplete="cc-name" />
+            </label>
+            <label class="payment-full">
+              Card Number
+              <input id="checkoutCardNumber" name="cardNumber" type="text" inputmode="numeric" autocomplete="cc-number"
+                placeholder="1234 5678 9012 3456" />
+            </label>
+            <label>
+              Expiry (MM/YY)
+              <input id="checkoutCardExpiry" name="cardExpiry" type="text" inputmode="numeric" autocomplete="cc-exp"
+                placeholder="MM/YY" />
+            </label>
+            <label>
+              CVV
+              <input id="checkoutCardCvv" name="cardCvv" type="password" inputmode="numeric" autocomplete="cc-csc"
+                placeholder="123" />
+            </label>
+          </div>
+
+          <div id="paymentUpiFields" class="payment-fields payment-upi" hidden>
+            <label class="payment-full">
+              UPI ID
+              <input id="checkoutUpiId" name="upiId" type="text" placeholder="name@bank" />
+            </label>
+          </div>
+          <p class="payment-note">Card and UPI payments are captured in demo mode only.</p>
+        </fieldset>
+      </div>
+
+      <p id="checkoutMessage" class="owner-message" aria-live="polite"></p>
+      <button class="btn btn-primary" type="submit">Place Order</button>
+    </form>
+  </div>
+
   <aside id="cartDrawer" class="cart-drawer" aria-hidden="true">
     <div class="cart-head">
       <h3>Your Cart</h3>
@@ -87,30 +212,33 @@
         </div>
       </div>
       <div class="hero-card float">
-        <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80" alt="Featured product" />
+        <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80"
+          alt="Featured product" />
       </div>
     </section>
 
-    <section id="collections" class="collections reveal">
-      <article>
-        <h3>Urban Flow</h3>
-        <p>Clean lines and lightweight layers for daily city movement.</p>
-      </article>
-      <article>
-        <h3>Studio Core</h3>
-        <p>Soft textures and stretch-fit silhouettes made to flex.</p>
-      </article>
-      <article>
-        <h3>Night Shift</h3>
-        <p>Reflective accents and performance blends for after-hours energy.</p>
-      </article>
+    <section id="collections" class="categories reveal">
+      <p class="eyebrow">Categories</p>
+      <div id="categoryRow" class="category-row">
+        <article class="category-pill">Metal</article>
+        <article class="category-pill">Glass</article>
+        <article class="category-pill">Rubber</article>
+      </div>
+    </section>
+
+    <section class="top-sells reveal">
+      <div class="section-head">
+        <p class="eyebrow">Top Sells This Week</p>
+      </div>
+      <div class="top-sells-grid" id="topSellsGrid"></div>
     </section>
 
     <section id="products" class="products">
       <div class="section-head reveal">
-        <p class="eyebrow">Featured Products</p>
-        <h2>Best sellers this week</h2>
+        <p class="eyebrow">Products</p>
+        <h2>Products</h2>
       </div>
+      <p id="productsEmpty" class="products-empty">No products yet.</p>
       <div class="product-grid" id="productGrid"></div>
     </section>
 
@@ -119,7 +247,7 @@
         <p class="eyebrow">Owner Product Entry</p>
         <h2>Add a new product</h2>
       </div>
-      <p id="ownerLockMessage" class="owner-lock-message">Login as owner to add or delete products.</p>
+      <p id="ownerLockMessage" class="owner-lock-message" hidden></p>
       <form id="ownerForm" class="owner-form">
         <label>
           Product name
@@ -128,6 +256,14 @@
         <label>
           Product price
           <input id="productPrice" name="productPrice" type="text" placeholder="$79" required />
+        </label>
+        <label class="owner-full">
+          Product category
+          <select id="productCategory" name="productCategory" required></select>
+        </label>
+        <label class="owner-full">
+          Add new category (optional)
+          <input id="newCategory" name="newCategory" type="text" placeholder="Example: Leather" />
         </label>
         <label class="owner-full">
           Product details
@@ -146,13 +282,6 @@
       </form>
     </section>
 
-    <section id="about" class="about reveal">
-      <div>
-        <p class="eyebrow">Why nkeys</p>
-        <h2>Built for comfort, styled for impact.</h2>
-      </div>
-      <p>Every piece in our catalog is tested for all-day wear, crafted in limited runs, and delivered with carbon-aware packaging.</p>
-    </section>
   </main>
 
   <footer class="site-footer reveal">
@@ -176,4 +305,5 @@
 
   <script src="script.js"></script>
 </body>
+
 </html>
