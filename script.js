@@ -1,19 +1,52 @@
-let nextProductId = 1;
+﻿let nextProductId = 1;
 
 const SESSION_KEY = "nkeys_user_session";
+const LOGIN_HISTORY_KEY = "nkeys_login_history";
+const ORDER_HISTORY_KEY = "nkeys_order_history";
 const SHEET_FALLBACK_KEY = "nkeys_sheet_fallback";
 const SALES_KEY = "nkeys_sales_by_product";
 const PRODUCTS_KEY = "nkeys_products";
 const CATEGORIES_KEY = "nkeys_categories";
 const CART_KEY = "nkeys_cart_items";
+const LIKES_KEY = "nkeys_liked_product_ids";
 const OWNER_EMAIL = "abhyas2006@gmail.com";
 const SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzZvEO19bp-EnMHQoXwpb3TksTnrLaei8_YQ8F3rH8aaYSs9RCQw17_LbSfPhiKvygl/exec";
-const DEFAULT_CATEGORIES = ["Metal", "Glass", "Rubber"];
+const DEFAULT_CATEGORIES = ["Metal Tags", "Acrylic Charms", "Leather Loops"];
+const LEGACY_DEFAULT_CATEGORIES = ["Metal", "Glass", "Rubber"];
+const HERO_INITIAL_SLIDES = [
+  {
+    label: "Initial Drop",
+    title: "Metal Tag Classic",
+    img: "hero-slide-metal-tag.svg",
+    alt: "Metal keychain tag with engraved initials"
+  },
+  {
+    label: "Initial Drop",
+    title: "Acrylic Charm Pop",
+    img: "hero-slide-acrylic-charm.svg",
+    alt: "Acrylic keychain charm with bright color layers"
+  },
+  {
+    label: "Initial Drop",
+    title: "Leather Loop Daily",
+    img: "hero-slide-leather-loop.svg",
+    alt: "Leather loop keychain with brass hardware"
+  },
+  {
+    label: "Initial Drop",
+    title: "Couple Tag Set",
+    img: "hero-slide-couple-tag.svg",
+    alt: "Matching engraved couple keychain tags"
+  }
+];
 
 const products = readProducts();
+const likedProductIds = readLikes();
 
 const grid = document.getElementById("productGrid");
 const template = document.getElementById("productTemplate");
+const likesBtn = document.getElementById("likesBtn");
+const likesCount = document.getElementById("likesCount");
 const cartBtn = document.getElementById("cartBtn");
 const cartCount = document.getElementById("cartCount");
 const cartDrawer = document.getElementById("cartDrawer");
@@ -27,6 +60,11 @@ const topSellsGrid = document.getElementById("topSellsGrid");
 const categoryRow = document.getElementById("categoryRow");
 const productsSection = document.getElementById("products");
 const productsEmpty = document.getElementById("productsEmpty");
+const heroSlider = document.getElementById("heroSlider");
+const heroSliderTrack = document.getElementById("heroSliderTrack");
+const heroSliderDots = document.getElementById("heroSliderDots");
+const heroSlideLabel = document.getElementById("heroSlideLabel");
+const heroSlideTitle = document.getElementById("heroSlideTitle");
 const ownerSection = document.getElementById("owner");
 const ownerForm = document.getElementById("ownerForm");
 const ownerMessage = document.getElementById("ownerMessage");
@@ -48,10 +86,34 @@ const loginCode = document.getElementById("loginCode");
 const verifyEmailBtn = document.getElementById("verifyEmailBtn");
 const verifyPhoneBtn = document.getElementById("verifyPhoneBtn");
 const confirmCodeBtn = document.getElementById("confirmCodeBtn");
+const showLoginDetailsBtn = document.getElementById("showLoginDetailsBtn");
+const showOrderDetailsBtn = document.getElementById("showOrderDetailsBtn");
+const ownerLoginPanel = document.getElementById("ownerLoginPanel");
+const ownerOrderPanel = document.getElementById("ownerOrderPanel");
+const loginHistoryBody = document.getElementById("loginHistoryBody");
+const loginHistoryEmpty = document.getElementById("loginHistoryEmpty");
+const orderHistoryBody = document.getElementById("orderHistoryBody");
+const orderHistoryEmpty = document.getElementById("orderHistoryEmpty");
 const checkoutModal = document.getElementById("checkoutModal");
 const closeCheckoutModal = document.getElementById("closeCheckoutModal");
 const checkoutForm = document.getElementById("checkoutForm");
 const checkoutMessage = document.getElementById("checkoutMessage");
+const productDetailView = document.getElementById("productDetailView");
+const closeProductDetailModal = document.getElementById("closeProductDetailModal");
+const productDetailBreadcrumb = document.getElementById("productDetailBreadcrumb");
+const productDetailImage = document.getElementById("productDetailImage");
+const productDetailCategory = document.getElementById("productDetailCategory");
+const productDetailTitle = document.getElementById("productDetailTitle");
+const productDetailPrice = document.getElementById("productDetailPrice");
+const productDetailDescription = document.getElementById("productDetailDescription");
+const productDetailHighlights = document.getElementById("productDetailHighlights");
+const productDetailRecommendations = document.getElementById("productDetailRecommendations");
+const productDetailRelatedGrid = document.getElementById("productDetailRelatedGrid");
+const productDetailBuyPrice = document.getElementById("productDetailBuyPrice");
+const productDetailMetaCategory = document.getElementById("productDetailMetaCategory");
+const productDetailQty = document.getElementById("productDetailQty");
+const productDetailAddBtn = document.getElementById("productDetailAddBtn");
+const productDetailBuyBtn = document.getElementById("productDetailBuyBtn");
 const checkoutFirstName = document.getElementById("checkoutFirstName");
 const checkoutLastName = document.getElementById("checkoutLastName");
 const checkoutPhone = document.getElementById("checkoutPhone");
@@ -82,6 +144,8 @@ const checkoutUpiId = document.getElementById("checkoutUpiId");
 
 const cartItems = readCart();
 const salesByProduct = readSales();
+const loginHistory = readLoginHistory();
+const orderHistory = readOrderHistory();
 const categories = readCategories();
 nextProductId = products.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0) + 1;
 
@@ -103,6 +167,11 @@ let checkoutVerifiedEmail = "";
 let checkoutPendingPhone = "";
 let checkoutPendingEmail = "";
 let checkoutCountryCode = "";
+let heroSlides = [];
+let heroSlideIndex = 0;
+let heroSliderTimer = 0;
+let activeProductDetailId = 0;
+let productDetailReturnY = 0;
 
 const observer = new IntersectionObserver((entries) => {
   for (const entry of entries) {
@@ -113,17 +182,24 @@ const observer = new IntersectionObserver((entries) => {
   }
 }, { threshold: 0.16 });
 
+const FALLBACK_INDIAN_ADDRESS_DATA = {
+  Maharashtra: ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane"],
+  Karnataka: ["Bengaluru Urban", "Mysuru", "Mangaluru", "Belagavi", "Hubballi"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem", "Tiruchirappalli"],
+  Delhi: ["Central Delhi", "East Delhi", "New Delhi", "North Delhi", "South Delhi"],
+  "West Bengal": ["Kolkata", "Howrah", "Darjeeling", "North 24 Parganas", "South 24 Parganas"]
+};
+
+const INDIA_ADDRESS_DATA =
+  typeof INDIA_STATES_AND_DISTRICTS === "object" && INDIA_STATES_AND_DISTRICTS
+    ? INDIA_STATES_AND_DISTRICTS
+    : FALLBACK_INDIAN_ADDRESS_DATA;
+
 const CHECKOUT_ADDRESS_DATA = {
   IN: {
     name: "India",
     dialCodes: ["91"],
-    states: {
-      Maharashtra: ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane"],
-      Karnataka: ["Bengaluru Urban", "Mysuru", "Mangaluru", "Belagavi", "Hubballi"],
-      "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem", "Tiruchirappalli"],
-      Delhi: ["Central Delhi", "East Delhi", "New Delhi", "North Delhi", "South Delhi"],
-      "West Bengal": ["Kolkata", "Howrah", "Darjeeling", "North 24 Parganas", "South 24 Parganas"]
-    }
+    states: INDIA_ADDRESS_DATA
   },
   US: {
     name: "United States",
@@ -160,6 +236,100 @@ function readSession() {
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
+  }
+}
+
+function readLoginHistory() {
+  try {
+    const raw = localStorage.getItem(LOGIN_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    const cleaned = [];
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== "object") {
+        continue;
+      }
+
+      const id = String(entry.id || "").trim();
+      const name = String(entry.name || "").trim();
+      const email = normalizeEmail(entry.email);
+      const phone = String(entry.phone || "").trim();
+      const role = entry.role === "owner" ? "owner" : "customer";
+      const verifiedBy = entry.verifiedBy === "phone" ? "phone" : "email";
+      const loginAt = String(entry.loginAt || "").trim();
+      const syncStatus = entry.syncStatus === "synced" ? "synced" : "queued";
+
+      if (!id || !name || !email || !phone || !loginAt) {
+        continue;
+      }
+
+      cleaned.push({
+        id,
+        name,
+        email,
+        phone,
+        role,
+        verifiedBy,
+        loginAt,
+        syncStatus
+      });
+    }
+
+    cleaned.sort((left, right) => new Date(right.loginAt).getTime() - new Date(left.loginAt).getTime());
+    return cleaned;
+  } catch {
+    return [];
+  }
+}
+
+function readOrderHistory() {
+  try {
+    const raw = localStorage.getItem(ORDER_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    const cleaned = [];
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== "object") {
+        continue;
+      }
+
+      const id = String(entry.id || "").trim();
+      const customerName = String(entry.customerName || "").trim();
+      const email = normalizeEmail(entry.email);
+      const phone = String(entry.phone || "").trim();
+      const itemsSummary = String(entry.itemsSummary || "").trim();
+      const addressSummary = String(entry.addressSummary || "").trim();
+      const paymentSummary = String(entry.paymentSummary || "").trim();
+      const rawTotal = String(entry.total || "").trim();
+      const createdAt = String(entry.createdAt || "").trim();
+
+      if (!id || !customerName || !email || !phone || !itemsSummary || !addressSummary || !paymentSummary || !rawTotal || !createdAt) {
+        continue;
+      }
+
+      cleaned.push({
+        id,
+        customerName,
+        email,
+        phone,
+        itemsSummary,
+        addressSummary,
+        paymentSummary,
+        total: formatPrice(parsePrice(rawTotal)),
+        createdAt
+      });
+    }
+
+    cleaned.sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+    return cleaned;
+  } catch {
+    return [];
   }
 }
 
@@ -202,10 +372,10 @@ function readProducts() {
       const name = String(entry.name || "").trim();
       const details = String(entry.details || "").trim();
       const img = String(entry.img || "").trim();
-      const price = String(entry.price || "").trim();
+      const rawPrice = String(entry.price || "").trim();
       const category = normalizeCategoryName(entry.category || "");
 
-      if (!Number.isFinite(id) || !name || !details || !img || !price) {
+      if (!Number.isFinite(id) || !name || !details || !img || !rawPrice) {
         continue;
       }
 
@@ -214,7 +384,7 @@ function readProducts() {
         name,
         details,
         img,
-        price,
+        price: formatPrice(parsePrice(rawPrice)),
         category
       });
     }
@@ -254,7 +424,15 @@ function readCategories() {
         unique.push(normalized);
       }
     }
-    return unique.length ? unique : [...DEFAULT_CATEGORIES];
+    if (!unique.length) {
+      return [...DEFAULT_CATEGORIES];
+    }
+
+    const isLegacyDefaultSet =
+      unique.length === LEGACY_DEFAULT_CATEGORIES.length &&
+      unique.every((name, index) => name.toLowerCase() === LEGACY_DEFAULT_CATEGORIES[index].toLowerCase());
+
+    return isLegacyDefaultSet ? [...DEFAULT_CATEGORIES] : unique;
   } catch {
     return [...DEFAULT_CATEGORIES];
   }
@@ -331,6 +509,32 @@ function saveCart() {
   localStorage.setItem(CART_KEY, JSON.stringify(serialized));
 }
 
+function readLikes() {
+  try {
+    const raw = localStorage.getItem(LIKES_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) {
+      return new Set();
+    }
+
+    const availableIds = new Set(products.map((item) => Number(item.id)));
+    const likedIds = new Set();
+    for (const entry of parsed) {
+      const productId = Number(entry);
+      if (availableIds.has(productId)) {
+        likedIds.add(productId);
+      }
+    }
+    return likedIds;
+  } catch {
+    return new Set();
+  }
+}
+
+function saveLikes() {
+  localStorage.setItem(LIKES_KEY, JSON.stringify(Array.from(likedProductIds)));
+}
+
 function isLoggedIn() {
   return Boolean(session && session.email);
 }
@@ -349,6 +553,228 @@ function saveSession(nextSession) {
   applyAuthUI();
 }
 
+function saveLoginHistory() {
+  localStorage.setItem(LOGIN_HISTORY_KEY, JSON.stringify(loginHistory));
+}
+
+function saveOrderHistory() {
+  localStorage.setItem(ORDER_HISTORY_KEY, JSON.stringify(orderHistory));
+}
+
+function createLoginHistoryEntry(payload) {
+  return {
+    id: `login-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: payload.name,
+    email: payload.email,
+    phone: payload.phone,
+    role: payload.role,
+    verifiedBy: payload.verifiedBy,
+    loginAt: payload.loginAt,
+    syncStatus: "queued"
+  };
+}
+
+function createOrderHistoryEntry(payload) {
+  return {
+    id: `order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    customerName: payload.customerName,
+    email: payload.email,
+    phone: payload.phone,
+    itemsSummary: payload.itemsSummary,
+    addressSummary: payload.addressSummary,
+    paymentSummary: payload.paymentSummary,
+    total: payload.total,
+    createdAt: payload.createdAt
+  };
+}
+
+function formatLoginDateTime(value) {
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(timestamp);
+}
+
+function summarizeOrderItems(items) {
+  if (!Array.isArray(items) || !items.length) {
+    return "";
+  }
+
+  return items
+    .map((item) => {
+      const name = String(item.name || "").trim();
+      const qty = Number(item.qty) || 0;
+      return name && qty > 0 ? `${name} x${qty}` : "";
+    })
+    .filter(Boolean)
+    .join(", ");
+}
+
+function summarizeOrderAddress(payload) {
+  return [
+    payload.addressLine1,
+    payload.addressLine2,
+    payload.landmark,
+    payload.district,
+    payload.state,
+    payload.postalCode,
+    payload.country
+  ]
+    .map((entry) => String(entry || "").trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
+function maskUpiId(value) {
+  const normalized = normalizeUpiId(value);
+  const [name = "", domain = ""] = normalized.split("@");
+  if (!name || !domain) {
+    return normalized;
+  }
+
+  const visibleChars = Math.min(2, name.length);
+  return `${name.slice(0, visibleChars)}${"*".repeat(Math.max(0, name.length - visibleChars))}@${domain}`;
+}
+
+function setOwnerDetailsView(view) {
+  const showLogin = view !== "order";
+
+  if (ownerLoginPanel) {
+    ownerLoginPanel.hidden = !showLogin;
+  }
+  if (ownerOrderPanel) {
+    ownerOrderPanel.hidden = showLogin;
+  }
+  if (showLoginDetailsBtn) {
+    showLoginDetailsBtn.classList.toggle("active", showLogin);
+    showLoginDetailsBtn.setAttribute("aria-pressed", String(showLogin));
+  }
+  if (showOrderDetailsBtn) {
+    showOrderDetailsBtn.classList.toggle("active", !showLogin);
+    showOrderDetailsBtn.setAttribute("aria-pressed", String(!showLogin));
+  }
+}
+
+function renderLoginHistory() {
+  if (!loginHistoryBody || !loginHistoryEmpty) {
+    return;
+  }
+
+  loginHistoryBody.textContent = "";
+
+  if (!loginHistory.length) {
+    loginHistoryEmpty.hidden = false;
+    return;
+  }
+
+  loginHistoryEmpty.hidden = true;
+
+  for (const entry of loginHistory) {
+    const row = document.createElement("tr");
+
+    const nameCell = document.createElement("td");
+    nameCell.textContent = entry.name;
+
+    const emailCell = document.createElement("td");
+    emailCell.textContent = entry.email;
+
+    const phoneCell = document.createElement("td");
+    phoneCell.textContent = entry.phone;
+
+    const roleCell = document.createElement("td");
+    roleCell.textContent = entry.role;
+
+    const verifiedCell = document.createElement("td");
+    verifiedCell.textContent = entry.verifiedBy;
+
+    const timeCell = document.createElement("td");
+    timeCell.textContent = formatLoginDateTime(entry.loginAt);
+
+    const syncCell = document.createElement("td");
+    const syncBadge = document.createElement("span");
+    syncBadge.className = `sync-badge ${entry.syncStatus}`;
+    syncBadge.textContent = entry.syncStatus === "synced" ? "Synced" : "Queued";
+    syncCell.appendChild(syncBadge);
+
+    row.append(nameCell, emailCell, phoneCell, roleCell, verifiedCell, timeCell, syncCell);
+    loginHistoryBody.appendChild(row);
+  }
+}
+
+function renderOrderHistory() {
+  if (!orderHistoryBody || !orderHistoryEmpty) {
+    return;
+  }
+
+  orderHistoryBody.textContent = "";
+
+  if (!orderHistory.length) {
+    orderHistoryEmpty.hidden = false;
+    return;
+  }
+
+  orderHistoryEmpty.hidden = true;
+
+  for (const entry of orderHistory) {
+    const row = document.createElement("tr");
+
+    const orderIdCell = document.createElement("td");
+    orderIdCell.textContent = entry.id;
+
+    const customerCell = document.createElement("td");
+    customerCell.textContent = entry.customerName;
+
+    const contactCell = document.createElement("td");
+    contactCell.textContent = `${entry.email} / ${entry.phone}`;
+
+    const itemsCell = document.createElement("td");
+    itemsCell.textContent = entry.itemsSummary;
+
+    const addressCell = document.createElement("td");
+    addressCell.textContent = entry.addressSummary;
+
+    const paymentCell = document.createElement("td");
+    paymentCell.textContent = entry.paymentSummary;
+
+    const totalCell = document.createElement("td");
+    totalCell.textContent = entry.total;
+
+    const orderedAtCell = document.createElement("td");
+    orderedAtCell.textContent = formatLoginDateTime(entry.createdAt);
+
+    row.append(orderIdCell, customerCell, contactCell, itemsCell, addressCell, paymentCell, totalCell, orderedAtCell);
+    orderHistoryBody.appendChild(row);
+  }
+}
+
+function appendLoginHistory(entry) {
+  loginHistory.unshift(entry);
+  saveLoginHistory();
+  renderLoginHistory();
+}
+
+function appendOrderHistory(entry) {
+  orderHistory.unshift(entry);
+  saveOrderHistory();
+  renderOrderHistory();
+}
+
+function updateLoginHistorySyncStatus(entryId, syncStatus) {
+  const entry = loginHistory.find((item) => item.id === entryId);
+  if (!entry || entry.syncStatus === syncStatus) {
+    return;
+  }
+
+  entry.syncStatus = syncStatus;
+  saveLoginHistory();
+  renderLoginHistory();
+}
+
 function queueSheetFallback(entry) {
   try {
     const list = JSON.parse(localStorage.getItem(SHEET_FALLBACK_KEY) || "[]");
@@ -362,17 +788,22 @@ function queueSheetFallback(entry) {
 async function sendLoginToSheet(payload) {
   if (!SHEET_WEBHOOK_URL) {
     queueSheetFallback(payload);
-    return;
+    return false;
   }
 
   try {
-    await fetch(SHEET_WEBHOOK_URL, {
+    const response = await fetch(SHEET_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
+    if (!response.ok) {
+      throw new Error(`Sheet sync failed with status ${response.status}`);
+    }
+    return true;
   } catch {
     queueSheetFallback(payload);
+    return false;
   }
 }
 
@@ -432,6 +863,8 @@ function setSelectPlaceholder(selectEl, placeholder) {
   const option = document.createElement("option");
   option.value = "";
   option.textContent = placeholder;
+  option.disabled = true;
+  option.selected = true;
   selectEl.appendChild(option);
 }
 
@@ -458,12 +891,10 @@ function populateCheckoutDistricts(countryCode, stateName, preferredDistrict = "
 
   if (preferredDistrict && districts.includes(preferredDistrict)) {
     checkoutDistrict.value = preferredDistrict;
-  } else {
-    checkoutDistrict.value = districts[0];
   }
 }
 
-function populateCheckoutStates(countryCode, preferredState = "") {
+function populateCheckoutStates(countryCode, preferredState = "", preferredDistrict = "") {
   setSelectPlaceholder(checkoutState, "Select state");
   setSelectPlaceholder(checkoutDistrict, "Select district");
   checkoutDistrict.disabled = true;
@@ -488,11 +919,8 @@ function populateCheckoutStates(countryCode, preferredState = "") {
 
   if (preferredState && states.includes(preferredState)) {
     checkoutState.value = preferredState;
-  } else {
-    checkoutState.value = states[0];
+    populateCheckoutDistricts(countryCode, checkoutState.value, preferredDistrict);
   }
-
-  populateCheckoutDistricts(countryCode, checkoutState.value);
 }
 
 function syncCheckoutCountryFromPhone() {
@@ -583,6 +1011,231 @@ function closeCheckout() {
   document.body.classList.remove("checkout-open");
 }
 
+function findProductById(productId) {
+  return products.find((item) => Number(item.id) === Number(productId)) || null;
+}
+
+function buildProductDetailHighlights(product) {
+  const rawDetails = String(product?.details || "").trim();
+  const highlights = [];
+
+  const normalizedParts = rawDetails
+    .split(/\s*[.;,]\s*/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  if (product?.category) {
+    highlights.push(`${product.category} finish for everyday carry.`);
+  }
+
+  for (const entry of normalizedParts) {
+    const cleaned = entry.replace(/\s+/g, " ");
+    if (!cleaned) {
+      continue;
+    }
+    const sentence = /[.!?]$/.test(cleaned) ? cleaned : `${cleaned}.`;
+    if (!highlights.some((item) => item.toLowerCase() === sentence.toLowerCase())) {
+      highlights.push(sentence.charAt(0).toUpperCase() + sentence.slice(1));
+    }
+    if (highlights.length >= 4) {
+      break;
+    }
+  }
+
+  const fallbackHighlights = [
+    "Built for bike keys, bags, office tags, and daily carry.",
+    "Works well for gifts, personal initials, and small custom drops.",
+    "Buy Now adds the selected quantity and takes the order to checkout."
+  ];
+
+  for (const fallback of fallbackHighlights) {
+    if (highlights.length >= 4) {
+      break;
+    }
+    if (!highlights.some((item) => item.toLowerCase() === fallback.toLowerCase())) {
+      highlights.push(fallback);
+    }
+  }
+
+  return highlights.slice(0, 4);
+}
+
+function setProductDetailQuantity(quantity) {
+  if (!productDetailQty) {
+    return 1;
+  }
+
+  const normalizedQuantity = Math.min(5, Math.max(1, Math.floor(Number(quantity) || 1)));
+  productDetailQty.value = String(normalizedQuantity);
+  return normalizedQuantity;
+}
+
+function buildProductDetailRecommendations(product) {
+  const activeId = Number(product?.id);
+  const sameCategory = products.filter((item) => (
+    Number(item.id) !== activeId &&
+    product?.category &&
+    item.category &&
+    item.category.toLowerCase() === product.category.toLowerCase()
+  ));
+
+  const otherProducts = products.filter((item) => (
+    Number(item.id) !== activeId &&
+    !sameCategory.some((entry) => Number(entry.id) === Number(item.id))
+  ));
+
+  return [...sameCategory, ...otherProducts].slice(0, 4);
+}
+
+function renderProductDetailRecommendations(product) {
+  if (!productDetailRelatedGrid || !productDetailRecommendations) {
+    return;
+  }
+
+  productDetailRelatedGrid.textContent = "";
+  const recommendedProducts = buildProductDetailRecommendations(product);
+  productDetailRecommendations.hidden = !recommendedProducts.length;
+
+  if (!recommendedProducts.length) {
+    return;
+  }
+
+  for (const item of recommendedProducts) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "product-detail-related-card";
+    card.addEventListener("click", () => openProductDetail(item));
+
+    const image = document.createElement("img");
+    image.src = item.img;
+    image.alt = item.name;
+    image.loading = "lazy";
+    card.appendChild(image);
+
+    const category = document.createElement("p");
+    category.className = "product-detail-related-category";
+    category.textContent = item.category || "Keychain";
+    card.appendChild(category);
+
+    const title = document.createElement("h4");
+    title.textContent = item.name;
+    card.appendChild(title);
+
+    const price = document.createElement("p");
+    price.className = "product-detail-related-price";
+    price.textContent = item.price;
+    card.appendChild(price);
+
+    productDetailRelatedGrid.appendChild(card);
+  }
+}
+
+function openProductDetail(product, options = {}) {
+  if (!product || !productDetailView) {
+    return;
+  }
+
+  productDetailReturnY = window.scrollY || window.pageYOffset || 0;
+  activeProductDetailId = Number(product.id) || 0;
+  if (productDetailImage) {
+    productDetailImage.src = product.img;
+    productDetailImage.alt = product.name;
+  }
+  if (productDetailCategory) {
+    productDetailCategory.textContent = product.category || "Featured Keychain";
+  }
+  if (productDetailTitle) {
+    productDetailTitle.textContent = product.name;
+  }
+  if (productDetailPrice) {
+    productDetailPrice.textContent = product.price;
+  }
+  if (productDetailDescription) {
+    productDetailDescription.textContent = product.details;
+  }
+  if (productDetailBuyPrice) {
+    productDetailBuyPrice.textContent = product.price;
+  }
+  if (productDetailMetaCategory) {
+    productDetailMetaCategory.textContent = `Category: ${product.category || "Custom keychain"}`;
+  }
+  if (productDetailBreadcrumb) {
+    productDetailBreadcrumb.textContent = product.name;
+  }
+  if (productDetailHighlights) {
+    productDetailHighlights.textContent = "";
+    for (const highlight of buildProductDetailHighlights(product)) {
+      const item = document.createElement("li");
+      item.textContent = highlight;
+      productDetailHighlights.appendChild(item);
+    }
+  }
+
+  setProductDetailQuantity(options.quantity || 1);
+  renderProductDetailRecommendations(product);
+  productDetailView.hidden = false;
+  document.body.classList.add("product-detail-open");
+  scrollPageToTop();
+}
+
+function closeProductDetail() {
+  if (!productDetailView) {
+    return;
+  }
+
+  productDetailView.hidden = true;
+  document.body.classList.remove("product-detail-open");
+  activeProductDetailId = 0;
+  window.scrollTo({ top: productDetailReturnY, left: 0, behavior: "auto" });
+}
+
+function addActiveProductDetailToCart({ openCheckoutAfter = false } = {}) {
+  const product = findProductById(activeProductDetailId);
+  if (!product) {
+    closeProductDetail();
+    return;
+  }
+
+  const quantity = setProductDetailQuantity(productDetailQty ? productDetailQty.value : 1);
+  addToCart(product, quantity);
+
+  if (productDetailImage) {
+    playAddToCartAnimation(productDetailImage, productDetailImage);
+  }
+
+  if (openCheckoutAfter) {
+    closeProductDetail();
+    openCheckout({ forceTop: true });
+  }
+}
+
+function handleProductDetailTrigger(event, containerSelector) {
+  if (!(event.target instanceof Element)) {
+    return;
+  }
+
+  const triggerCard = event.target.closest(containerSelector);
+  if (!triggerCard) {
+    return;
+  }
+
+  if (event.target.closest("button")) {
+    return;
+  }
+
+  const productId = Number(triggerCard.getAttribute("data-product-id"));
+  if (!Number.isFinite(productId)) {
+    return;
+  }
+
+  const product = findProductById(productId);
+  if (!product) {
+    return;
+  }
+
+  openProductDetail(product);
+}
+
 function sendCheckoutPhoneOtp() {
   const phone = checkoutPhone.value.trim();
   if (!phone) {
@@ -598,7 +1251,7 @@ function sendCheckoutPhoneOtp() {
 
   checkoutCountryCode = countryCode;
   checkoutCountry.value = CHECKOUT_ADDRESS_DATA[countryCode].name;
-  populateCheckoutStates(countryCode, checkoutState.value);
+  populateCheckoutStates(countryCode, checkoutState.value, checkoutDistrict.value);
 
   checkoutPhoneOtpCode = String(Math.floor(100000 + Math.random() * 900000));
   checkoutPendingPhone = normalizePhone(phone);
@@ -835,7 +1488,21 @@ function submitCheckout(event) {
     return;
   }
 
-  let paymentSnapshot = { method: paymentMethod };
+  const cartSnapshot = [];
+  let orderTotalAmount = 0;
+  for (const entry of cartItems.values()) {
+    const unitPrice = parsePrice(entry.product.price);
+    const lineTotal = unitPrice * entry.qty;
+    orderTotalAmount += lineTotal;
+    cartSnapshot.push({
+      name: entry.product.name,
+      qty: entry.qty,
+      unitPrice: formatPrice(unitPrice),
+      lineTotal: formatPrice(lineTotal)
+    });
+  }
+
+  let paymentSnapshot = { method: paymentMethod, summary: paymentMethod };
 
   if (paymentMethod === "card") {
     const cardHolder = checkoutCardHolder ? checkoutCardHolder.value.trim() : "";
@@ -865,9 +1532,7 @@ function submitCheckout(event) {
 
     paymentSnapshot = {
       method: "card",
-      cardHolder,
-      cardLast4: cardNumber.slice(-4),
-      cardExpiry
+      summary: `Card ending ${cardNumber.slice(-4)}`
     };
   } else if (paymentMethod === "upi") {
     const upiId = normalizeUpiId(checkoutUpiId ? checkoutUpiId.value : "");
@@ -878,13 +1543,19 @@ function submitCheckout(event) {
 
     paymentSnapshot = {
       method: "upi",
-      upiId
+      summary: `UPI ${maskUpiId(upiId)}`
     };
   } else if (paymentMethod !== "cod") {
     checkoutMessage.textContent = "Select a valid payment method.";
     return;
+  } else {
+    paymentSnapshot = {
+      method: "cod",
+      summary: "Cash on Delivery"
+    };
   }
 
+  const createdAt = new Date().toISOString();
   const checkoutSnapshot = {
     firstName: checkoutFirstName.value.trim(),
     secondName: checkoutLastName.value.trim(),
@@ -897,10 +1568,22 @@ function submitCheckout(event) {
     addressLine1: checkoutAddressLine1.value.trim(),
     addressLine2: checkoutAddressLine2.value.trim(),
     landmark: checkoutLandmark.value.trim(),
+    items: cartSnapshot,
+    total: formatPrice(orderTotalAmount),
     payment: paymentSnapshot,
-    createdAt: new Date().toISOString()
+    createdAt
   };
 
+  appendOrderHistory(createOrderHistoryEntry({
+    customerName: [checkoutSnapshot.firstName, checkoutSnapshot.secondName].filter(Boolean).join(" "),
+    email: checkoutSnapshot.email,
+    phone: checkoutSnapshot.phone,
+    itemsSummary: summarizeOrderItems(checkoutSnapshot.items),
+    addressSummary: summarizeOrderAddress(checkoutSnapshot),
+    paymentSummary: checkoutSnapshot.payment.summary,
+    total: checkoutSnapshot.total,
+    createdAt: checkoutSnapshot.createdAt
+  }));
   localStorage.setItem("nkeys_last_checkout", JSON.stringify(checkoutSnapshot));
   placeOrder();
   closeCheckout();
@@ -932,9 +1615,9 @@ function parsePrice(value) {
 }
 
 function formatPrice(value) {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD"
+    currency: "INR"
   }).format(value);
 }
 
@@ -974,6 +1657,76 @@ function handleCartButtonInteraction(event) {
     event.stopPropagation();
   }
   openCart({ forceTop: true });
+}
+
+function setLikeButtonState(button, productId) {
+  if (!button) {
+    return;
+  }
+
+  const liked = likedProductIds.has(productId);
+  const symbol = button.querySelector(".like-symbol");
+  button.classList.toggle("liked", liked);
+  button.setAttribute("aria-pressed", String(liked));
+  button.setAttribute("aria-label", liked ? "Remove from likes" : "Like keychain");
+  if (symbol) {
+    symbol.textContent = liked ? "\u2665" : "\u2661";
+  }
+}
+
+function updateLikesUI() {
+  if (likesCount) {
+    likesCount.textContent = String(likedProductIds.size);
+  }
+
+  if (likesBtn) {
+    likesBtn.classList.toggle("has-likes", likedProductIds.size > 0);
+    likesBtn.setAttribute(
+      "aria-label",
+      likedProductIds.size ? `Liked keychains (${likedProductIds.size})` : "Liked keychains"
+    );
+  }
+
+  document.querySelectorAll(".like-btn").forEach((button) => {
+    const productId = Number(button.dataset.productId);
+    if (Number.isFinite(productId)) {
+      setLikeButtonState(button, productId);
+    }
+  });
+}
+
+function toggleLike(productId) {
+  if (!Number.isFinite(productId)) {
+    return;
+  }
+
+  if (likedProductIds.has(productId)) {
+    likedProductIds.delete(productId);
+  } else {
+    likedProductIds.add(productId);
+  }
+
+  saveLikes();
+  updateLikesUI();
+}
+
+function spotlightLikedProducts() {
+  productsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  document.querySelectorAll(".product-card[data-product-id]").forEach((card) => {
+    const productId = Number(card.dataset.productId);
+    if (!likedProductIds.has(productId)) {
+      card.classList.remove("liked-focus");
+      return;
+    }
+
+    card.classList.remove("liked-focus");
+    void card.offsetWidth;
+    card.classList.add("liked-focus");
+    window.setTimeout(() => {
+      card.classList.remove("liked-focus");
+    }, 1400);
+  });
 }
 
 function updateCartCount() {
@@ -1067,12 +1820,13 @@ function updateCartUI() {
   cartTotal.textContent = formatPrice(total);
 }
 
-function addToCart(product) {
+function addToCart(product, quantity = 1) {
+  const normalizedQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
   const existing = cartItems.get(product.id);
   if (existing) {
-    existing.qty += 1;
+    existing.qty += normalizedQuantity;
   } else {
-    cartItems.set(product.id, { product, qty: 1 });
+    cartItems.set(product.id, { product, qty: normalizedQuantity });
   }
   saveCart();
   updateCartUI();
@@ -1165,6 +1919,115 @@ function playAddToCartAnimation(sourceCard, sourceImage) {
   }, 1800);
 }
 
+function buildHeroSlides() {
+  const productSlides = products
+    .filter((item) => String(item.img || "").trim())
+    .slice(0, 4)
+    .map((item, index) => ({
+      label: index === 0 ? "Latest Keychain" : item.category || "Featured Keychain",
+      title: item.name,
+      img: item.img,
+      alt: item.name
+    }));
+
+  return productSlides.length ? productSlides : HERO_INITIAL_SLIDES;
+}
+
+function stopHeroSliderAutoplay() {
+  if (heroSliderTimer) {
+    window.clearInterval(heroSliderTimer);
+    heroSliderTimer = 0;
+  }
+}
+
+function syncHeroSlider() {
+  if (!heroSliderTrack || !heroSlides.length) {
+    return;
+  }
+
+  const boundedIndex = ((heroSlideIndex % heroSlides.length) + heroSlides.length) % heroSlides.length;
+  heroSlideIndex = boundedIndex;
+  heroSliderTrack.style.transform = `translateX(-${boundedIndex * 100}%)`;
+
+  const currentSlide = heroSlides[boundedIndex];
+  if (heroSlideLabel) {
+    heroSlideLabel.textContent = currentSlide.label;
+  }
+  if (heroSlideTitle) {
+    heroSlideTitle.textContent = currentSlide.title;
+  }
+
+  if (heroSliderDots) {
+    heroSliderDots.querySelectorAll(".hero-slider-dot").forEach((button, index) => {
+      const active = index === boundedIndex;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  }
+}
+
+function startHeroSliderAutoplay() {
+  stopHeroSliderAutoplay();
+  if (heroSlides.length < 2) {
+    return;
+  }
+
+  heroSliderTimer = window.setInterval(() => {
+    heroSlideIndex += 1;
+    syncHeroSlider();
+  }, 3400);
+}
+
+function goToHeroSlide(index) {
+  heroSlideIndex = index;
+  syncHeroSlider();
+  startHeroSliderAutoplay();
+}
+
+function renderHeroSlider() {
+  if (!heroSliderTrack || !heroSliderDots) {
+    return;
+  }
+
+  heroSlides = buildHeroSlides();
+  if (!heroSlides.length) {
+    return;
+  }
+
+  heroSliderTrack.textContent = "";
+  heroSliderDots.textContent = "";
+
+  for (const slide of heroSlides) {
+    const slideNode = document.createElement("article");
+    slideNode.className = "hero-slide";
+
+    const image = document.createElement("img");
+    image.src = slide.img;
+    image.alt = slide.alt;
+    image.loading = "eager";
+    image.decoding = "async";
+    slideNode.appendChild(image);
+
+    heroSliderTrack.appendChild(slideNode);
+  }
+
+  heroSlides.forEach((slide, index) => {
+    const dot = document.createElement("button");
+    dot.className = "hero-slider-dot";
+    dot.type = "button";
+    dot.setAttribute("aria-label", `Show ${slide.title}`);
+    dot.addEventListener("click", () => goToHeroSlide(index));
+    heroSliderDots.appendChild(dot);
+  });
+
+  heroSliderDots.hidden = heroSlides.length < 2;
+  if (heroSlideIndex >= heroSlides.length) {
+    heroSlideIndex = 0;
+  }
+  syncHeroSlider();
+  startHeroSliderAutoplay();
+}
+
 function renderProduct(item, prepend = false) {
   const node = template.content.cloneNode(true);
   const card = node.querySelector(".product-card");
@@ -1172,17 +2035,31 @@ function renderProduct(item, prepend = false) {
   const title = node.querySelector("h3");
   const details = node.querySelector(".details");
   const price = node.querySelector(".price");
+  const likeButton = node.querySelector(".like-btn");
   const addButton = node.querySelector(".add-btn");
   const deleteButton = node.querySelector(".delete-btn");
 
+  card.dataset.productId = String(item.id);
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", `View details for ${item.name}`);
   img.src = item.img;
   img.alt = item.name;
   title.textContent = item.name;
   details.textContent = item.category ? `${item.category} - ${item.details}` : item.details;
   price.textContent = item.price;
   deleteButton.hidden = !isOwner();
+  if (likeButton) {
+    likeButton.dataset.productId = String(item.id);
+    setLikeButtonState(likeButton, item.id);
+    likeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleLike(item.id);
+    });
+  }
 
-  addButton.addEventListener("click", () => {
+  addButton.addEventListener("click", (event) => {
+    event.stopPropagation();
     playAddToCartAnimation(card, img);
     addToCart(item);
     addButton.textContent = "Added";
@@ -1194,7 +2071,8 @@ function renderProduct(item, prepend = false) {
     }, 650);
   });
 
-  deleteButton.addEventListener("click", () => {
+  deleteButton.addEventListener("click", (event) => {
+    event.stopPropagation();
     if (!isOwner()) {
       openLogin();
       return;
@@ -1205,12 +2083,37 @@ function renderProduct(item, prepend = false) {
       products.splice(index, 1);
       saveProducts();
     }
+    if (likedProductIds.delete(item.id)) {
+      saveLikes();
+      updateLikesUI();
+    }
     cartItems.delete(item.id);
     saveCart();
     updateCartUI();
     card.remove();
+    if (activeProductDetailId === item.id) {
+      closeProductDetail();
+    }
     updateProductsEmptyState();
+    renderHeroSlider();
     renderTopSells();
+  });
+
+  card.addEventListener("click", (event) => {
+    if (event.target instanceof Element && event.target.closest("button")) {
+      return;
+    }
+    openProductDetail(item);
+  });
+
+  card.addEventListener("keydown", (event) => {
+    if (event.target !== card) {
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openProductDetail(item);
+    }
   });
 
   if (prepend) {
@@ -1249,7 +2152,7 @@ function renderTopSells() {
   if (!ranked.length) {
     const empty = document.createElement("p");
     empty.className = "top-sells-empty";
-    empty.textContent = "No sales yet. Top products appear after checkout.";
+    empty.textContent = "No orders yet. Best-selling keychains appear after checkout.";
     topSellsGrid.appendChild(empty);
     return;
   }
@@ -1257,6 +2160,10 @@ function renderTopSells() {
   for (const entry of ranked) {
     const card = document.createElement("article");
     card.className = "top-sell-card";
+    card.dataset.productId = String(entry.product.id);
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `View details for ${entry.product.name}`);
 
     const img = document.createElement("img");
     img.src = entry.product.img;
@@ -1272,6 +2179,14 @@ function renderTopSells() {
     price.className = "price";
     price.textContent = entry.product.price;
     card.appendChild(price);
+
+    card.addEventListener("click", () => openProductDetail(entry.product));
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openProductDetail(entry.product);
+      }
+    });
 
     topSellsGrid.appendChild(card);
   }
@@ -1576,7 +2491,7 @@ ownerForm.addEventListener("submit", async (event) => {
   ownerMessage.textContent = "";
 
   if (!isOwner()) {
-    ownerMessage.textContent = "Only owner can add products.";
+    ownerMessage.textContent = "Only owner can add keychains.";
     openLogin();
     return;
   }
@@ -1596,12 +2511,12 @@ ownerForm.addEventListener("submit", async (event) => {
   }
 
   if (!category) {
-    ownerMessage.textContent = "Select a category or add a new category.";
+    ownerMessage.textContent = "Select a category or add a new collection.";
     return;
   }
 
   if (!imageUrl && !selectedFile) {
-    ownerMessage.textContent = "Add an image URL or upload an image file.";
+    ownerMessage.textContent = "Add a keychain image URL or upload an image file.";
     return;
   }
 
@@ -1619,7 +2534,7 @@ ownerForm.addEventListener("submit", async (event) => {
   const item = {
     id: nextProductId++,
     name,
-    price: numericPrice ? formatPrice(numericPrice) : "$0.00",
+    price: formatPrice(numericPrice),
     category,
     details,
     img
@@ -1628,6 +2543,7 @@ ownerForm.addEventListener("submit", async (event) => {
   products.unshift(item);
   saveProducts();
   renderProduct(item, true);
+  renderHeroSlider();
   renderTopSells();
   productsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
   ownerForm.reset();
@@ -1635,9 +2551,38 @@ ownerForm.addEventListener("submit", async (event) => {
   if (newCategoryInput) {
     newCategoryInput.value = "";
   }
-  ownerMessage.textContent = "Product added successfully.";
+  ownerMessage.textContent = "Keychain added successfully.";
   applyAuthUI();
 });
+
+if (showLoginDetailsBtn) {
+  showLoginDetailsBtn.addEventListener("click", () => setOwnerDetailsView("login"));
+}
+
+if (showOrderDetailsBtn) {
+  showOrderDetailsBtn.addEventListener("click", () => setOwnerDetailsView("order"));
+}
+
+if (likesBtn) {
+  likesBtn.addEventListener("click", spotlightLikedProducts);
+}
+
+if (heroSlider) {
+  heroSlider.addEventListener("pointerenter", stopHeroSliderAutoplay);
+  heroSlider.addEventListener("pointerleave", startHeroSliderAutoplay);
+}
+
+if (grid) {
+  grid.addEventListener("click", (event) => {
+    handleProductDetailTrigger(event, ".product-card[data-product-id]");
+  });
+}
+
+if (topSellsGrid) {
+  topSellsGrid.addEventListener("click", (event) => {
+    handleProductDetailTrigger(event, ".top-sell-card[data-product-id]");
+  });
+}
 
 verifyEmailBtn.addEventListener("click", () => sendVerificationCode("email"));
 verifyPhoneBtn.addEventListener("click", () => sendVerificationCode("phone"));
@@ -1657,6 +2602,22 @@ checkoutModal.addEventListener("click", (event) => {
     closeCheckout();
   }
 });
+
+if (closeProductDetailModal) {
+  closeProductDetailModal.addEventListener("click", closeProductDetail);
+}
+
+if (productDetailAddBtn) {
+  productDetailAddBtn.addEventListener("click", () => {
+    addActiveProductDetailToCart();
+  });
+}
+
+if (productDetailBuyBtn) {
+  productDetailBuyBtn.addEventListener("click", () => {
+    addActiveProductDetailToCart({ openCheckoutAfter: true });
+  });
+}
 
 sendPhoneOtpBtn.addEventListener("click", sendCheckoutPhoneOtp);
 verifyPhoneOtpBtn.addEventListener("click", verifyCheckoutPhoneOtp);
@@ -1741,9 +2702,12 @@ loginForm.addEventListener("submit", async (event) => {
   const role = email === OWNER_EMAIL ? "owner" : "customer";
   const loginAt = new Date().toISOString();
   const nextSession = { name, email, phone, role, verifiedBy: verifiedMethod, loginAt };
+  const loginEntry = createLoginHistoryEntry(nextSession);
 
   saveSession(nextSession);
-  await sendLoginToSheet(nextSession);
+  appendLoginHistory(loginEntry);
+  const synced = await sendLoginToSheet(nextSession);
+  updateLoginHistorySyncStatus(loginEntry.id, synced ? "synced" : "queued");
 
   loginForm.reset();
   closeLogin();
@@ -1771,15 +2735,21 @@ document.addEventListener("keydown", (event) => {
     closeCart();
     closeLogin();
     closeCheckout();
+    closeProductDetail();
   }
 });
 
 updateCartUI();
 renderCategories();
 renderOwnerCategoryOptions();
+renderLoginHistory();
+renderOrderHistory();
+setOwnerDetailsView("login");
 syncPaymentMethodUI();
 applyAuthUI();
+updateLikesUI();
 updateProductsEmptyState();
+renderHeroSlider();
 renderTopSells();
 setupCursorChain();
 document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));

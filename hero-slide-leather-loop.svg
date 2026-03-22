@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Leather Loop Daily</title>
+  <desc id="desc">A leather loop keychain with brass hardware.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbf1e2"/>
+      <stop offset="100%" stop-color="#c38f63"/>
+    </linearGradient>
+    <linearGradient id="strap" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5a3825"/>
+      <stop offset="100%" stop-color="#24130d"/>
+    </linearGradient>
+    <linearGradient id="brass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe7ac"/>
+      <stop offset="100%" stop-color="#be8849"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#000000" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <circle cx="1040" cy="160" r="110" fill="#ffffff" fill-opacity="0.26"/>
+  <circle cx="160" cy="720" r="180" fill="#fff9ef" fill-opacity="0.34"/>
+
+  <g filter="url(#shadow)" transform="translate(270 110)">
+    <circle cx="525" cy="152" r="120" fill="none" stroke="url(#brass)" stroke-width="32"/>
+    <path d="M310 238c0-100 78-176 188-176h56c106 0 186 76 186 176 0 40-13 76-34 104L574 574c-18 32-48 50-82 50s-64-18-82-50L344 460c-22-38-34-72-34-122z" fill="url(#strap)"/>
+    <path d="M360 252c0-68 58-122 138-122h56c82 0 138 54 138 122 0 26-8 52-24 78L542 548c-12 20-29 30-50 30-20 0-38-10-50-30L384 442" fill="none" stroke="#7e5a43" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="525" cy="152" r="54" fill="none" stroke="#fff3cf" stroke-width="6"/>
+    <text x="426" y="726" fill="#312118" font-family="Space Grotesk, Arial, sans-serif" font-size="34" font-weight="700">Leather Loop Daily</text>
+  </g>
+</svg>

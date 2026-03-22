@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">nkeys keychain illustration</title>
+  <desc id="desc">A premium key ring with metal, acrylic, and leather keychains.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff5df"/>
+      <stop offset="48%" stop-color="#ffe0b8"/>
+      <stop offset="100%" stop-color="#f6c17c"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdfefe"/>
+      <stop offset="45%" stop-color="#b6bdc4"/>
+      <stop offset="100%" stop-color="#f5f8fa"/>
+    </linearGradient>
+    <linearGradient id="orangeTag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff8f5c"/>
+      <stop offset="100%" stop-color="#ef5f2c"/>
+    </linearGradient>
+    <linearGradient id="creamTag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff8eb"/>
+      <stop offset="100%" stop-color="#ffe2b1"/>
+    </linearGradient>
+    <linearGradient id="strap" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4e3528"/>
+      <stop offset="100%" stop-color="#24150f"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="22" stdDeviation="20" flood-color="#000000" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <circle cx="990" cy="160" r="110" fill="#ffffff" fill-opacity="0.42"/>
+  <circle cx="1020" cy="740" r="150" fill="#ffffff" fill-opacity="0.26"/>
+  <circle cx="180" cy="760" r="190" fill="#fff9ef" fill-opacity="0.75"/>
+
+  <g filter="url(#shadow)">
+    <circle cx="405" cy="320" r="132" fill="none" stroke="url(#metal)" stroke-width="34"/>
+    <circle cx="405" cy="320" r="83" fill="none" stroke="#fefefe" stroke-opacity="0.65" stroke-width="6"/>
+    <path d="M523 378c65 12 96 44 106 92" fill="none" stroke="url(#metal)" stroke-linecap="round" stroke-width="18"/>
+
+    <g transform="translate(556 410) rotate(11)">
+      <rect x="0" y="0" width="246" height="300" rx="42" fill="url(#orangeTag)"/>
+      <rect x="18" y="18" width="210" height="264" rx="30" fill="none" stroke="#ffd2be" stroke-opacity="0.7" stroke-width="4"/>
+      <circle cx="52" cy="52" r="17" fill="#fff1e9"/>
+      <text x="48" y="178" fill="#fff7f2" font-family="Syne, Arial, sans-serif" font-size="76" font-weight="800">NK</text>
+      <text x="48" y="236" fill="#fff7f2" font-family="Space Grotesk, Arial, sans-serif" font-size="28" font-weight="600">Custom Tag</text>
+      <text x="48" y="272" fill="#fff7f2" font-family="Space Grotesk, Arial, sans-serif" font-size="22">everyday carry</text>
+    </g>
+
+    <g transform="translate(786 360) rotate(-8)">
+      <rect x="0" y="0" width="190" height="220" rx="34" fill="url(#creamTag)"/>
+      <rect x="14" y="14" width="162" height="192" rx="24" fill="none" stroke="#ffffff" stroke-opacity="0.7" stroke-width="4"/>
+      <circle cx="42" cy="42" r="15" fill="#f4c57d"/>
+      <path d="M52 110l20 39 43 6-31 30 7 42-39-21-39 21 8-42-31-30 43-6z" fill="#ef5f2c"/>
+    </g>
+
+    <g transform="translate(662 696)">
+      <path d="M0 0c18-54 51-82 99-82s79 28 91 82c10 43-14 96-60 118-45 21-99 10-124-30C-12 60-13 30 0 0z" fill="url(#strap)"/>
+      <circle cx="94" cy="26" r="16" fill="#e8ecef"/>
+      <path d="M87 44h15" stroke="#e8ecef" stroke-linecap="round" stroke-width="4"/>
+    </g>
+  </g>
+
+  <text x="86" y="116" fill="#1b1b1b" font-family="Syne, Arial, sans-serif" font-size="56" font-weight="800">nkeys</text>
+  <text x="86" y="156" fill="#5b4f40" font-family="Space Grotesk, Arial, sans-serif" font-size="24">custom keychains for daily carry</text>
+</svg>

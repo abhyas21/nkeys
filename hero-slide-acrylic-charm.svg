@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Acrylic Charm Pop</title>
+  <desc id="desc">A bright acrylic keychain charm with layered color detail.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff4e8"/>
+      <stop offset="100%" stop-color="#ff9573"/>
+    </linearGradient>
+    <linearGradient id="tag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff9fb"/>
+      <stop offset="100%" stop-color="#ffc9d2"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#000000" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <circle cx="980" cy="180" r="130" fill="#ffffff" fill-opacity="0.26"/>
+  <circle cx="200" cy="740" r="170" fill="#ffffff" fill-opacity="0.22"/>
+
+  <g filter="url(#shadow)" transform="translate(250 115)">
+    <circle cx="235" cy="200" r="142" fill="none" stroke="#fdfefe" stroke-width="34"/>
+    <circle cx="235" cy="200" r="88" fill="none" stroke="#f7bfc9" stroke-width="8"/>
+    <path d="M350 248c54 12 98 46 112 92" fill="none" stroke="#fff7fa" stroke-linecap="round" stroke-width="18"/>
+    <rect x="445" y="176" width="298" height="350" rx="46" fill="url(#tag)"/>
+    <rect x="463" y="194" width="262" height="314" rx="34" fill="none" stroke="#ffffff" stroke-width="5"/>
+    <circle cx="503" cy="225" r="16" fill="#ff8f73"/>
+    <circle cx="594" cy="342" r="76" fill="#ff855f"/>
+    <path d="M594 286l22 42 46 7-33 32 8 46-43-23-43 23 8-46-33-32 46-7z" fill="#fff2de"/>
+    <text x="505" y="468" fill="#5c2f32" font-family="Space Grotesk, Arial, sans-serif" font-size="28" font-weight="700">Acrylic Charm Pop</text>
+  </g>
+</svg>
