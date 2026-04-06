@@ -25,38 +25,44 @@ React + Tailwind ecommerce storefront for NKeys, focused on custom stickers and 
 ## Run
 
 ```bash
-npm install
-npm run dev
+npm.cmd install
+npm.cmd run dev
 ```
 
 ## Supabase Setup
 
 1. Copy `.env.example` to `.env`
 2. Fill in `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_PRODUCT_IMAGE_BUCKET`, and `VITE_DEFAULT_COUNTRY_CODE`
-3. Run the SQL in [db/schema.sql](/c:/Users/Abhyas/projects/nkeys/db/schema.sql)
-4. Create a public storage bucket matching `VITE_SUPABASE_PRODUCT_IMAGE_BUCKET`
+3. Leave `VITE_ENABLE_PHONE_OTP=false` unless you also want Firebase mobile OTP
+4. Run the SQL in [db/schema.sql](/c:/Users/Abhyas/projects/nkeys/db/schema.sql)
+5. Create a public storage bucket matching `VITE_SUPABASE_PRODUCT_IMAGE_BUCKET`
 
-## Live OTP And Email Verification
+## Live Verification
 
-The login screen now uses Supabase Auth for live verification instead of showing a browser-only demo code.
+The login screen now uses real provider-backed verification instead of showing a browser-only demo code.
 
 To make it work end-to-end:
 
 1. In Supabase, open `Authentication -> Providers`
 2. Enable `Email`
 3. Configure the email template so it sends the OTP token, not only a magic link
-4. Enable `Phone`
-5. Connect an SMS provider supported by Supabase Auth
-6. Add your project URL to `Authentication -> URL Configuration` if your setup requires it
-7. Restart the Vite dev server after saving `.env`
+4. Add your project URL to `Authentication -> URL Configuration` if your setup requires it
+5. Restart the Vite dev server after saving `.env`
 
 What the app now does:
 
 - `Send code` calls `supabase.auth.signInWithOtp(...)`
 - `Verify and enter store` calls `supabase.auth.verifyOtp(...)`
 - After verification succeeds, the app creates the local storefront session and syncs the customer record to the shared `users` table when Supabase is configured
+- If `VITE_ENABLE_PHONE_OTP=true`, mobile OTP uses Firebase Phone Authentication on the web
 
-If Supabase Auth, email OTP, or the SMS provider is not configured yet, the login screen will show a setup warning instead of an on-screen demo code.
+Optional mobile OTP:
+
+- Set `VITE_ENABLE_PHONE_OTP=true`
+- Enable `Phone` in Firebase Authentication
+- Set up the authorized domain and reCAPTCHA flow in Firebase for web sign-in
+
+If the selected verification provider is not configured yet, the login screen will show a setup warning instead of an on-screen demo code.
 
 ## Directory Structure
 

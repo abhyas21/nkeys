@@ -13,7 +13,10 @@ import {
   formatPhoneForOtp,
   getLiveVerificationSetupMessage,
   getVerificationDeliveryTarget,
-  isLiveVerificationConfigured,
+  isEmailVerificationEnabled,
+  isPhoneVerificationConfigured,
+  isPhoneVerificationEnabled,
+  isVerificationMethodReady,
   sendVerificationCode,
   verifyVerificationCode
 } from "../lib/liveVerification";
@@ -27,14 +30,11 @@ const initialForm = {
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_OTP_MIN_LENGTH = 6;
+const EMAIL_OTP_MAX_LENGTH = 8;
+const PHONE_OTP_LENGTH = 6;
 
 const sanitizePhone = (value) => String(value || "").replace(/\D/g, "").slice(0, 10);
-
-const verificationHighlights = [
-  "Name, mobile, and email captured in one step",
-  "Live code delivery through Supabase Auth",
-  "Same verified entry for customers and owner"
-];
 
 export default function StartupAuth() {
   const { signInCustomer } = useStore();
@@ -62,6 +62,65 @@ export default function StartupAuth() {
     () => getVerificationDeliveryTarget(form.verificationMethod, form),
     [form]
   );
+  const verificationHighlights = [
+    "Name, mobile, and email captured in one step",
+    isPhoneVerificationEnabled
+      ? "Live email and mobile OTP delivery through Supabase and Firebase"
+      : "Live email code delivery through Supabase Auth",
+    "Same verified entry for customers and owner"
+  ];
+  const verificationOptions = [
+    {
+      value: "email",
+      label: "Email verification",
+      copy: "Send a live code to the saved email address.",
+      icon: Mail
+    },
+    ...(isPhoneVerificationEnabled
+      ? [
+          {
+            value: "phone",
+            label: "Mobile verification",
+            copy: "Send a live OTP to the saved phone number.",
+            icon: Smartphone
+          }
+        ]
+      : [])
+  ];
+  const verificationChannelLabel = isPhoneVerificationEnabled ? "email or mobile OTP" : "email";
+  const codeConstraints =
+    form.verificationMethod === "phone"
+      ? {
+          min: PHONE_OTP_LENGTH,
+          max: PHONE_OTP_LENGTH,
+          label: "6-digit",
+          placeholder: "6-digit code"
+        }
+      : {
+          min: EMAIL_OTP_MIN_LENGTH,
+          max: EMAIL_OTP_MAX_LENGTH,
+          label: "6 to 8-digit",
+          placeholder: "6 to 8-digit code"
+        };
+  const verificationLiveLabel =
+    isEmailVerificationEnabled && isPhoneVerificationConfigured
+      ? "Live email and mobile verification are active."
+      : isEmailVerificationEnabled
+        ? "Live email verification is active."
+        : isPhoneVerificationConfigured
+          ? "Live mobile verification is active."
+          : "Live verification setup is still required.";
+  const verificationSetupCopy = isPhoneVerificationEnabled
+    ? "Add Supabase email OTP, or enable Firebase Phone Authentication for mobile OTP."
+    : "Add your Supabase keys and enable email OTP to send real verification codes.";
+  const liveVerificationDescription =
+    isEmailVerificationEnabled && isPhoneVerificationConfigured
+      ? "Email codes are sent by Supabase Auth and mobile OTP is sent by Firebase Phone Auth."
+      : isEmailVerificationEnabled
+        ? "Codes are sent by Supabase Auth and verified before the storefront unlocks."
+        : isPhoneVerificationConfigured
+          ? "Mobile OTP is sent by Firebase Phone Auth and verified before the storefront unlocks."
+          : verificationSetupCopy;
 
   const sendButtonLabel = cooldownSeconds
     ? `Resend in ${cooldownSeconds}s`
@@ -110,8 +169,8 @@ export default function StartupAuth() {
       return;
     }
 
-    if (!isLiveVerificationConfigured) {
-      setErrorMessage(getLiveVerificationSetupMessage());
+    if (!isVerificationMethodReady(form.verificationMethod)) {
+      setErrorMessage(getLiveVerificationSetupMessage(form.verificationMethod));
       setInfoMessage("");
       return;
     }
@@ -160,13 +219,17 @@ export default function StartupAuth() {
       return;
     }
 
-    if (form.code.trim().length < 6) {
-      setErrorMessage("Enter the 6-digit verification code.");
+    const trimmedCode = form.code.trim();
+    if (
+      trimmedCode.length < codeConstraints.min ||
+      trimmedCode.length > codeConstraints.max
+    ) {
+      setErrorMessage(`Enter the ${codeConstraints.label} verification code.`);
       return;
     }
 
-    if (!isLiveVerificationConfigured) {
-      setErrorMessage(getLiveVerificationSetupMessage());
+    if (!isVerificationMethodReady(form.verificationMethod)) {
+      setErrorMessage(getLiveVerificationSetupMessage(form.verificationMethod));
       return;
     }
 
@@ -177,7 +240,7 @@ export default function StartupAuth() {
         email: form.email.trim(),
         phone: form.phone,
         verificationMethod: form.verificationMethod,
-        code: form.code.trim()
+        code: trimmedCode
       });
 
       if (error) {
@@ -220,7 +283,7 @@ export default function StartupAuth() {
               </h1>
               <p className="max-w-2xl text-base leading-8 text-stone-600 md:text-lg">
                 Enter your name, phone number, and email once. Then request a live verification
-                code through email or SMS and use that code to open the storefront.
+                code through {verificationChannelLabel} and use that code to open the storefront.
               </p>
             </div>
 
@@ -242,14 +305,10 @@ export default function StartupAuth() {
               Verification
             </div>
             <p className="mt-3 text-lg font-semibold">
-              {isLiveVerificationConfigured
-                ? "Live email and SMS verification is active."
-                : "Live verification setup is still required."}
+              {verificationLiveLabel}
             </p>
             <p className="mt-3 text-sm leading-7 text-stone-300">
-              {isLiveVerificationConfigured
-                ? "Codes are sent by Supabase Auth and verified before the storefront unlocks."
-                : "Add your Supabase keys, enable email OTP, and connect an SMS provider to send real verification codes."}
+              {liveVerificationDescription}
             </p>
           </div>
         </section>
@@ -305,42 +364,42 @@ export default function StartupAuth() {
               </label>
             </div>
 
-            <div>
-              <span className="mb-3 block text-sm font-semibold text-ink">Verify with</span>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {[
-                  {
-                    value: "email",
-                    label: "Email verification",
-                    copy: "Send a live code to the saved email address.",
-                    icon: Mail
-                  },
-                  {
-                    value: "phone",
-                    label: "Mobile verification",
-                    copy: "Send a live OTP to the saved phone number.",
-                    icon: Smartphone
-                  }
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => updateField("verificationMethod", option.value)}
-                    className={`rounded-3xl border p-5 text-left transition ${
-                      form.verificationMethod === option.value
-                        ? "border-stone-900 bg-stone-900 text-white"
-                        : "border-stone-200 bg-stone-50 text-stone-600"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <option.icon size={18} />
-                      <p className="text-base font-semibold">{option.label}</p>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 opacity-90">{option.copy}</p>
-                  </button>
-                ))}
+            {isPhoneVerificationEnabled ? (
+              <div>
+                <span className="mb-3 block text-sm font-semibold text-ink">Verify with</span>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {verificationOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => updateField("verificationMethod", option.value)}
+                      className={`rounded-3xl border p-5 text-left transition ${
+                        form.verificationMethod === option.value
+                          ? "border-stone-900 bg-stone-900 text-white"
+                          : "border-stone-200 bg-stone-50 text-stone-600"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <option.icon size={18} />
+                        <p className="text-base font-semibold">{option.label}</p>
+                      </div>
+                      <p className="mt-2 text-sm leading-6 opacity-90">{option.copy}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
+                <div className="flex items-center gap-2 text-ink">
+                  <Mail size={18} />
+                  <p className="text-base font-semibold">Email verification</p>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-stone-600">
+                  The website is using email OTP for verified entry. Mobile numbers are still
+                  captured for orders and customer support.
+                </p>
+              </div>
+            )}
 
             <div className="rounded-3xl bg-sand p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -373,21 +432,25 @@ export default function StartupAuth() {
             </div>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-ink">Enter verification code</span>
+              <span className="mb-2 block text-sm font-semibold text-ink">
+                Enter verification code
+              </span>
               <input
                 inputMode="numeric"
                 value={form.code}
                 onChange={(event) =>
-                  updateField("code", event.target.value.replace(/\D/g, "").slice(0, 6))
+                  updateField("code", event.target.value.replace(/\D/g, "").slice(0, codeConstraints.max))
                 }
-                placeholder="6-digit code"
+                placeholder={codeConstraints.placeholder}
                 className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-900"
               />
             </label>
 
-            {!isLiveVerificationConfigured ? (
+            {isPhoneVerificationEnabled ? <div id="recaptcha-container"></div> : null}
+
+            {!isVerificationMethodReady(form.verificationMethod) ? (
               <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {getLiveVerificationSetupMessage()}
+                {getLiveVerificationSetupMessage(form.verificationMethod)}
               </p>
             ) : null}
 
