@@ -112,7 +112,7 @@ export default function CheckoutPage() {
 
   if (!cartItems.length) {
     return (
-      <section className="rounded-[2rem] border border-stone-200 bg-white p-10 text-center shadow-soft">
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-6 text-center shadow-soft sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
           Checkout
         </p>
@@ -131,9 +131,9 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+    <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8">
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft lg:p-8"
+        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-6 lg:p-8"
         style={{ "--delay": "40ms" }}
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -141,11 +141,11 @@ export default function CheckoutPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
               Checkout flow
             </p>
-            <h1 className="mt-2 text-4xl font-semibold text-ink">
+            <h1 className="mt-2 text-3xl font-semibold text-ink sm:text-4xl">
               Shipping, payment, then final review
             </h1>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-sand px-4 py-2 text-sm font-medium text-stone-600">
+          <div className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-sand px-4 py-2 text-sm font-medium text-stone-600 sm:w-auto">
             <ShieldCheck size={16} className="text-moss" />
             Secure demo checkout
           </div>
@@ -169,7 +169,7 @@ export default function CheckoutPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.22em]">
                   Step {index + 1}
                 </p>
-                <p className="mt-2 text-lg font-semibold">{step}</p>
+                <p className="mt-2 text-base font-semibold sm:text-lg">{step}</p>
               </div>
             );
           })}
@@ -182,7 +182,7 @@ export default function CheckoutPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                   Shipping
                 </p>
-                <h2 className="mt-2 text-3xl font-semibold text-ink">
+                <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
                   Where should the order go?
                 </h2>
               </div>
@@ -280,7 +280,7 @@ export default function CheckoutPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                   Payment
                 </p>
-                <h2 className="mt-2 text-3xl font-semibold text-ink">
+                <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
                   How should the order be paid?
                 </h2>
               </div>
@@ -389,7 +389,7 @@ export default function CheckoutPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                   Review order
                 </p>
-                <h2 className="mt-2 text-3xl font-semibold text-ink">
+                <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
                   Confirm before placing the order
                 </h2>
               </div>
@@ -445,12 +445,12 @@ export default function CheckoutPage() {
           </p>
         ) : null}
 
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           {stepIndex > 0 ? (
             <button
               type="button"
               onClick={previousStep}
-              className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-ink transition hover:border-stone-900"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-ink transition hover:border-stone-900 sm:w-auto"
             >
               <ArrowLeft size={16} />
               Back
@@ -458,7 +458,7 @@ export default function CheckoutPage() {
           ) : (
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-ink transition hover:border-stone-900"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-ink transition hover:border-stone-900 sm:w-auto"
             >
               <ArrowLeft size={16} />
               Keep shopping
@@ -469,7 +469,7 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={nextStep}
-              className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 sm:w-auto"
             >
               Continue
               <ArrowRight size={16} />
@@ -478,7 +478,7 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={placeOrder}
-              className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 sm:w-auto"
             >
               Place order
               <BadgeCheck size={16} />
@@ -488,24 +488,26 @@ export default function CheckoutPage() {
       </section>
 
       <aside
-        className="page-reveal-right space-y-5 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft"
+        className="page-reveal-right space-y-5 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-6 xl:sticky xl:top-28 xl:self-start"
         style={{ "--delay": "120ms" }}
       >
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
             Order summary
           </p>
-          <h2 className="mt-2 text-3xl font-semibold text-ink">{cartItems.length} line items</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
+            {cartItems.length} line items
+          </h2>
         </div>
 
         <div className="space-y-4">
           {cartItems.map((line) => (
             <article key={line.id} className="rounded-3xl bg-stone-50 p-4">
-              <div className="flex gap-4">
+              <div className="flex gap-3 sm:gap-4">
                 <img
                   src={line.product.gallery[0]}
                   alt={line.product.name}
-                  className="h-20 w-20 rounded-2xl object-cover"
+                  className="h-16 w-16 rounded-2xl object-cover sm:h-20 sm:w-20"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-ink">{line.product.name}</p>

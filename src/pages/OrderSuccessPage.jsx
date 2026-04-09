@@ -37,7 +37,7 @@ export default function OrderSuccessPage() {
   return (
     <div className="space-y-8">
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-8 text-center shadow-soft lg:p-10"
+        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-5 text-center shadow-soft sm:p-8 lg:p-10"
         style={{ "--delay": "40ms" }}
       >
         <span className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
@@ -46,13 +46,15 @@ export default function OrderSuccessPage() {
         <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
           Order success
         </p>
-        <h1 className="mt-3 text-4xl font-semibold text-ink">Order placed successfully</h1>
+        <h1 className="mt-3 text-3xl font-semibold text-ink sm:text-4xl">
+          Order placed successfully
+        </h1>
         <p className="mt-4 text-base leading-8 text-stone-600">
           Your NKeys order has been saved locally with number{" "}
           <span className="font-semibold text-ink">{order.number}</span>.
         </p>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
           <div className="rounded-3xl bg-sand p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
               Status

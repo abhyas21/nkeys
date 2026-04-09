@@ -18,11 +18,11 @@ export default function Layout() {
 
       <div className="relative z-10">
         <Header />
-        <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
           <Outlet />
         </main>
         <footer className="border-t border-stone-200 bg-white/82 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-stone-500 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-6 text-sm leading-7 text-stone-500 sm:px-6 sm:py-8 lg:flex-row lg:items-center lg:justify-between lg:px-8">
             <p>NKeys builds custom stickers and keychains for drops, gifts, events, and everyday carry.</p>
             <p>Frontend demo with persistent cart, reviews, checkout flow, admin panel, and SQL schema.</p>
           </div>

@@ -26,17 +26,14 @@ function ScrollToTop() {
 export default function App() {
   const { backendLabel, currentCustomer, isOwner, isStoreLoading } = useStore();
   const landingPage = <HomePage />;
-  const checkoutPage = isOwner ? <CheckoutPage /> : <Navigate to="/products" replace />;
-  const successPage = isOwner ? <OrderSuccessPage /> : <Navigate to="/products" replace />;
+  const checkoutPage = <CheckoutPage />;
+  const successPage = <OrderSuccessPage />;
   const addProductPage = isOwner ? <AddProductPage /> : <Navigate to="/" replace />;
+  const verifyPage = currentCustomer ? <Navigate to="/" replace /> : <StartupAuth />;
 
   useEffect(() => {
     window.__NKEYS_APP_MOUNTED__?.();
   }, []);
-
-  if (!currentCustomer) {
-    return <StartupAuth />;
-  }
 
   if (isStoreLoading) {
     return (
@@ -65,11 +62,15 @@ export default function App() {
           <Route index element={landingPage} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/likes" element={<LikesPage />} />
+          <Route path="/verify" element={verifyPage} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/:slug" element={<ProductPage />} />
           <Route path="/checkout" element={checkoutPage} />
           <Route path="/checkout/success/:orderId" element={successPage} />
-          <Route path="/admin" element={isOwner ? <AdminPage /> : <Navigate to="/" replace />} />
+          <Route
+            path="/admin"
+            element={isOwner ? <AdminPage /> : <Navigate to={currentCustomer ? "/" : "/verify"} replace />}
+          />
           <Route path="/admin/products/new" element={addProductPage} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

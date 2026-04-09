@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Heart, Menu, ShoppingBag, Store, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useStore } from "../context/StoreContext";
 
 const linkClasses = ({ isActive }) =>
@@ -64,8 +64,8 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/90 backdrop-blur">
-      <div className="page-reveal mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4">
+      <div className="page-reveal mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-4 sm:gap-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
           <NavLink
             to={homePath}
             className="flex items-center gap-3"
@@ -74,12 +74,12 @@ export default function Header() {
               closeProfileMenu();
             }}
           >
-            <span className="motion-float inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-stone-900 text-white shadow-soft">
+            <span className="motion-float inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-stone-900 text-white shadow-soft sm:h-11 sm:w-11">
               <Store size={18} />
             </span>
-            <div>
-              <p className="font-sans text-lg font-semibold text-ink">NKeys</p>
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-500">
+            <div className="min-w-0">
+              <p className="font-sans text-base font-semibold text-ink sm:text-lg">NKeys</p>
+              <p className="text-[0.65rem] uppercase tracking-[0.24em] text-stone-500 sm:text-xs">
                 Stickers & keychains
               </p>
             </div>
@@ -121,6 +121,15 @@ export default function Header() {
                   {likedProductIds.length}
                 </span>
               </NavLink>
+            ) : null}
+
+            {!currentCustomer ? (
+              <Link
+                to="/verify"
+                className="hidden rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-stone-900 md:inline-flex"
+              >
+                Owner login
+              </Link>
             ) : null}
 
             <div className="relative hidden md:block" ref={profileMenuRef}>
@@ -194,22 +203,21 @@ export default function Header() {
               ) : null}
             </div>
 
-            {isOwner ? (
-              <button
-                type="button"
-                onClick={() => setCartOpen(true)}
-                data-cart-anchor="true"
-                className={`inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-stone-900 ${
-                  isCartBumping ? "cart-bump" : ""
-                }`}
-              >
-                <ShoppingBag size={16} />
-                Cart
-                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-stone-900 px-2 text-xs text-white">
-                  {cartCount}
-                </span>
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => setCartOpen(true)}
+              data-cart-anchor="true"
+              className={`inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-3 text-sm font-semibold text-ink shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-stone-900 sm:px-4 ${
+                isCartBumping ? "cart-bump" : ""
+              }`}
+              aria-label={`Open cart with ${cartCount} item${cartCount === 1 ? "" : "s"}`}
+            >
+              <ShoppingBag size={16} />
+              <span className="hidden sm:inline">Cart</span>
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-stone-900 px-2 text-xs text-white">
+                {cartCount}
+              </span>
+            </button>
 
             <button
               type="button"
@@ -237,6 +245,11 @@ export default function Header() {
             <NavLink to="/likes" className={linkClasses} onClick={closeMobileMenu}>
               Likes
             </NavLink>
+            {!currentCustomer ? (
+              <NavLink to="/verify" className={linkClasses} onClick={closeMobileMenu}>
+                Owner login
+              </NavLink>
+            ) : null}
             {isOwner ? (
               <NavLink to="/admin" className={linkClasses} onClick={closeMobileMenu}>
                 Admin
@@ -245,7 +258,7 @@ export default function Header() {
             {currentCustomer ? (
               <div className="rounded-3xl bg-stone-50 p-4 text-sm text-stone-600">
                 <p className="font-semibold text-ink">{currentCustomer.name}</p>
-                <p className="mt-1 break-all">{currentCustomer.email}</p>
+                <p className="mt-1 break-words">{currentCustomer.email}</p>
                 <p className="mt-1">{currentCustomer.phone}</p>
                 <button
                   type="button"

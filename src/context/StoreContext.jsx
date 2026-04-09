@@ -552,7 +552,11 @@ export function StoreProvider({ children }) {
 
   const saveProduct = async (payload) => {
     if (!isOwner) {
-      return false;
+      return {
+        ok: false,
+        storage: "blocked",
+        warning: "Only the owner account can save products."
+      };
     }
 
     const productId = payload.id || createId("product");
@@ -585,6 +589,19 @@ export function StoreProvider({ children }) {
       specs: normalizeStringList(payload.specs)
     };
 
+    const saveLocally = (warningMessage = "") => {
+      setStore((current) => ({
+        ...current,
+        products: upsertById(current.products, nextProduct)
+      }));
+      setSyncStatusMessage(warningMessage);
+      return {
+        ok: true,
+        storage: "local",
+        warning: warningMessage
+      };
+    };
+
     if (isSupabaseConfigured) {
       try {
         const savedProduct = await saveRemoteProduct(nextProduct, store.categories);
@@ -593,24 +610,20 @@ export function StoreProvider({ children }) {
           products: upsertById(current.products, savedProduct)
         }));
         setSyncStatusMessage("");
-        return true;
+        return {
+          ok: true,
+          storage: "supabase",
+          warning: ""
+        };
       } catch (error) {
         console.warn("Product could not be synced to Supabase.", error);
-        setSyncStatusMessage(
-          "The product could not be saved to Supabase. Check your database tables, storage bucket, and policies."
+        return saveLocally(
+          "Supabase product sync failed, so this product was saved only in this browser. Check your database tables, storage bucket, and policies."
         );
-        return false;
       }
     }
 
-    setStore((current) => {
-      return {
-        ...current,
-        products: upsertById(current.products, nextProduct)
-      };
-    });
-
-    return true;
+    return saveLocally("");
   };
 
   const moderateReview = (reviewId, status) => {

@@ -54,15 +54,20 @@ export default function AddProductPage() {
     setUploadFeedback("");
 
     try {
-      const { urls, provider } = await uploadProductImages(files);
+      const { urls, provider, warning } = await uploadProductImages(files);
       setGalleryImages((current) => [...current, ...urls]);
       setUploadFeedback(
         provider === "supabase"
           ? `${urls.length} image${urls.length === 1 ? "" : "s"} uploaded to Supabase storage.`
-          : `${urls.length} image${urls.length === 1 ? "" : "s"} added using local demo storage.`
+          : `${urls.length} image${urls.length === 1 ? "" : "s"} added locally because Supabase storage is not ready${warning ? ` (${warning}).` : "."}`
       );
-    } catch {
-      setUploadFeedback("Images could not be uploaded. Check your Supabase storage settings or try smaller files.");
+    } catch (error) {
+      const message = String(error?.message || "").trim();
+      setUploadFeedback(
+        message
+          ? `Images could not be uploaded. ${message}`
+          : "Images could not be uploaded. Check your Supabase storage bucket and policies."
+      );
     } finally {
       setIsUploading(false);
     }
@@ -78,7 +83,7 @@ export default function AddProductPage() {
     setSaveFeedback("");
 
     try {
-      const saved = await saveProduct({
+      const result = await saveProduct({
         name: productName,
         description,
         shortDescription,
@@ -95,8 +100,8 @@ export default function AddProductPage() {
         specs: []
       });
 
-      if (!saved) {
-        setSaveFeedback("Product could not be saved.");
+      if (!result?.ok) {
+        setSaveFeedback(result?.warning || "Product could not be saved.");
         return;
       }
 
@@ -228,7 +233,7 @@ export default function AddProductPage() {
             <p className="mt-2 text-sm leading-7 text-stone-600">
               Storage: {getProductImageStorageLabel()}
               {hasRemoteProductImageStorage()
-                ? " is active for uploaded product images."
+                ? " is active for uploaded product images, including larger files."
                 : " is being used until Supabase env vars are configured."}
             </p>
             <input

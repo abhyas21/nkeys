@@ -18,7 +18,7 @@ export default function ProductCard({
       <button
         type="button"
         onClick={() => toggleLikedProduct(product.id)}
-        className={`absolute right-4 top-4 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border bg-white/92 shadow-sm backdrop-blur transition ${
+        className={`absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border bg-white/92 shadow-sm backdrop-blur transition sm:right-4 sm:top-4 sm:h-11 sm:w-11 ${
           liked
             ? "border-rose-200 text-rose-500"
             : "border-stone-200 text-stone-500 hover:border-stone-900 hover:text-rose-500"
@@ -38,19 +38,19 @@ export default function ProductCard({
         </div>
       </Link>
 
-      <div className="flex flex-1 flex-col gap-4 p-5">
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
             {categoryName}
           </p>
           <Link to={`/products/${product.slug}`} className="mt-2 block">
-            <h3 className="font-sans text-xl font-semibold text-ink">{product.name}</h3>
+            <h3 className="font-sans text-lg font-semibold text-ink sm:text-xl">{product.name}</h3>
           </Link>
         </div>
 
         <p className="text-sm leading-6 text-stone-600">{product.shortDescription}</p>
 
-        <div className="mt-auto flex items-end justify-between gap-4">
+        <div className="mt-auto flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <RatingStars rating={averageRating} size={14} />
@@ -59,13 +59,15 @@ export default function ProductCard({
               </span>
             </div>
             <div className="mt-2 flex items-center gap-3">
-              <span className="text-2xl font-semibold text-ink">{formatMoney(product.price)}</span>
+              <span className="text-xl font-semibold text-ink sm:text-2xl">
+                {formatMoney(product.price)}
+              </span>
             </div>
           </div>
 
           <Link
             to={`/products/${product.slug}`}
-            className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink transition duration-300 hover:-translate-y-0.5 hover:border-stone-900"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink transition duration-300 hover:-translate-y-0.5 hover:border-stone-900 sm:w-auto"
           >
             View
             <ArrowRight size={16} className="transition duration-300 group-hover:translate-x-0.5" />

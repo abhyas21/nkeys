@@ -431,12 +431,6 @@ body {
   will-change: transform, box-shadow;
 }
 
-.lift-card:hover {
-  transform: translate3d(0, -8px, 0);
-  box-shadow: var(--lift-shadow);
-  border-color: rgba(20, 20, 20, 0.18);
-}
-
 .lift-card::after {
   content: "";
   position: absolute;
@@ -454,18 +448,9 @@ body {
   transform: skewX(-18deg);
 }
 
-.lift-card:hover::after {
-  animation: soft-sheen 1050ms ease;
-}
-
 .motion-media {
   transition: transform 360ms var(--ease-out-expo), filter 360ms ease;
   will-change: transform, filter;
-}
-
-.lift-card:hover .motion-media {
-  transform: scale(1.045) rotate(-0.45deg);
-  filter: saturate(1.05);
 }
 
 .stagger-grid > * {
@@ -483,10 +468,6 @@ body {
 
 .product-depth-card {
   transform-style: preserve-3d;
-}
-
-.product-depth-card:hover {
-  transform: translate3d(0, -10px, 0) rotateX(4deg) rotateY(-4deg);
 }
 
 .launch-showcase {
@@ -973,6 +954,27 @@ body {
 
   .cart-fly-name {
     font-size: 0.74rem;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lift-card:hover {
+    transform: translate3d(0, -8px, 0);
+    box-shadow: var(--lift-shadow);
+    border-color: rgba(20, 20, 20, 0.18);
+  }
+
+  .lift-card:hover::after {
+    animation: soft-sheen 1050ms ease;
+  }
+
+  .lift-card:hover .motion-media {
+    transform: scale(1.045) rotate(-0.45deg);
+    filter: saturate(1.05);
+  }
+
+  .product-depth-card:hover {
+    transform: translate3d(0, -10px, 0) rotateX(4deg) rotateY(-4deg);
   }
 }
 

@@ -11,17 +11,17 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       <section
-        className="page-reveal grid gap-8 rounded-[2rem] border border-stone-200 bg-white p-8 shadow-soft lg:grid-cols-[1.02fr_0.98fr] lg:p-10"
+        className="page-reveal grid gap-6 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:gap-8 sm:p-8 lg:grid-cols-[1.02fr_0.98fr] lg:p-10"
         style={{ "--delay": "40ms" }}
       >
         <div className="flex flex-col justify-center">
           <span className="inline-flex w-fit items-center rounded-full bg-sand px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-stone-600">
             New launch
           </span>
-          <h1 className="mt-4 max-w-2xl text-4xl font-semibold text-ink md:text-5xl">
+          <h1 className="mt-4 max-w-2xl text-3xl font-semibold text-ink sm:text-4xl lg:text-5xl">
             Explore all products
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-8 text-stone-600 md:text-base">
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-600 sm:text-base sm:leading-8">
             Browse the full catalog in a clean product grid. Open any item to view its image
             carousel, price, description, and save it to your like list.
           </p>
@@ -29,21 +29,21 @@ export default function HomePage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 sm:w-auto"
             >
               Browse catalog
               <ArrowRight size={16} />
             </Link>
             <Link
               to="/about"
-              className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900 sm:w-auto"
             >
               About
             </Link>
             {isOwner ? (
               <Link
                 to="/admin"
-                className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900 sm:w-auto"
               >
                 <BadgeCheck size={16} />
                 Admin dashboard
@@ -56,7 +56,7 @@ export default function HomePage() {
           <div className="launch-orb launch-orb-a" />
           <div className="launch-orb launch-orb-b" />
 
-          <article className="launch-card-3d rounded-[2rem] border border-stone-200 bg-stone-50 p-5 shadow-soft">
+          <article className="launch-card-3d rounded-[2rem] border border-stone-200 bg-stone-50 p-4 shadow-soft sm:p-5">
             {launchProduct ? (
               <>
                 <div className="overflow-hidden rounded-[1.6rem] bg-white">
@@ -66,12 +66,14 @@ export default function HomePage() {
                     className="aspect-[4/4.1] w-full object-cover"
                   />
                 </div>
-                <div className="mt-5 flex items-center justify-between gap-4">
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                       New launch
                     </p>
-                    <h2 className="mt-2 text-2xl font-semibold text-ink">{launchProduct.name}</h2>
+                    <h2 className="mt-2 text-xl font-semibold text-ink sm:text-2xl">
+                      {launchProduct.name}
+                    </h2>
                   </div>
                   <span className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-ink shadow-sm">
                     {formatMoney(launchProduct.price)}
@@ -113,10 +115,10 @@ export default function HomePage() {
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
             Product grid
           </p>
-          <h2 className="mt-2 text-3xl font-semibold text-ink">All products</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">All products</h2>
         </div>
 
-        <div className="stagger-grid grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div className="stagger-grid grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {products.length ? (
             products.map((product) => {
               const summary = getProductReviewSummary(publishedReviews, product.id);
@@ -142,13 +144,15 @@ export default function HomePage() {
       </section>
 
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-8 shadow-soft"
+        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-8"
         style={{ "--delay": "180ms" }}
       >
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
           About NKeys
         </p>
-        <h2 className="mt-2 text-3xl font-semibold text-ink">Made for customers who like clean browsing</h2>
+        <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
+          Made for customers who like clean browsing
+        </h2>
         <p className="mt-4 max-w-3xl text-sm leading-8 text-stone-600">
           NKeys keeps the storefront simple: explore products, open details, save favorites, and
           browse launches without clutter.

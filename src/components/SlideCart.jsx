@@ -9,15 +9,10 @@ export default function SlideCart() {
     cartSubtotal,
     cartCount,
     formatMoney,
-    isOwner,
     removeFromCart,
     updateCartQuantity,
     setCartOpen
   } = useStore();
-
-  if (!isOwner) {
-    return null;
-  }
 
   return (
     <>
@@ -33,7 +28,7 @@ export default function SlideCart() {
           cartOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-stone-200 px-6 py-5">
+        <div className="flex items-center justify-between border-b border-stone-200 px-4 py-4 sm:px-6 sm:py-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
               Cart
@@ -51,7 +46,7 @@ export default function SlideCart() {
           </button>
         </div>
 
-        <div className="stagger-grid flex-1 space-y-4 overflow-y-auto px-6 py-5">
+        <div className="stagger-grid flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
           {cartItems.length ? (
             cartItems.map((line) => {
               const inventory = Number(line.product.inventory) || 0;
@@ -60,11 +55,11 @@ export default function SlideCart() {
 
               return (
                 <article key={line.id} className="lift-card rounded-3xl border border-stone-200 p-4">
-                  <div className="flex gap-4">
+                  <div className="flex gap-3 sm:gap-4">
                     <img
                       src={line.product.gallery[0]}
                       alt={line.product.name}
-                      className="motion-media h-24 w-24 rounded-2xl object-cover"
+                      className="motion-media h-20 w-20 rounded-2xl object-cover sm:h-24 sm:w-24"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">
@@ -138,7 +133,7 @@ export default function SlideCart() {
           )}
         </div>
 
-        <div className="border-t border-stone-200 px-6 py-5">
+        <div className="border-t border-stone-200 px-4 py-4 sm:px-6 sm:py-5">
           <div className="mb-4 flex items-center justify-between text-sm text-stone-500">
             <span>Subtotal</span>
             <span className="text-lg font-semibold text-ink">{formatMoney(cartSubtotal)}</span>

@@ -9,13 +9,15 @@ export default function ProductsPage() {
   return (
     <div className="space-y-8">
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-8 shadow-soft"
+        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-8"
         style={{ "--delay": "40ms" }}
       >
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
           Product listing
         </p>
-        <h1 className="mt-2 text-4xl font-semibold text-ink">All stickers and keychains</h1>
+        <h1 className="mt-2 text-3xl font-semibold text-ink sm:text-4xl">
+          All stickers and keychains
+        </h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-600">
           Browse every product in one clean grid. Open any item for the image carousel, price,
           description, and like button.
@@ -23,7 +25,7 @@ export default function ProductsPage() {
       </section>
 
       <section className="page-reveal space-y-6" style={{ "--delay": "120ms" }}>
-        <div className="stagger-grid grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="stagger-grid grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {products.length ? (
             products.map((product) => {
               const summary = getProductReviewSummary(publishedReviews, product.id);
@@ -39,7 +41,7 @@ export default function ProductsPage() {
               );
             })
           ) : (
-            <div className="rounded-[2rem] border border-dashed border-stone-300 bg-stone-50 p-8 text-sm leading-7 text-stone-600 md:col-span-2 2xl:col-span-3">
+            <div className="rounded-[2rem] border border-dashed border-stone-300 bg-stone-50 p-8 text-sm leading-7 text-stone-600 sm:col-span-2 xl:col-span-3">
               <p className="font-semibold text-ink">No products added yet.</p>
               <p className="mt-2">
                 {isOwner

@@ -253,10 +253,10 @@ export default function ProductPage() {
   return (
     <div className="space-y-10">
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft lg:p-8"
+        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-4 shadow-soft sm:p-6 lg:p-8"
         style={{ "--delay": "40ms" }}
       >
-        <div className="mb-6 flex flex-wrap items-center gap-3 text-sm text-stone-500">
+        <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-stone-500 sm:gap-3">
           <Link to="/products" className="font-semibold text-terracotta">
             Products
           </Link>
@@ -266,7 +266,7 @@ export default function ProductPage() {
           <span className="text-ink">{product.name}</span>
         </div>
 
-        <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr] xl:gap-8">
           <div className="space-y-4">
             <div ref={heroImageRef} className="relative overflow-hidden rounded-[2rem] bg-sand">
               <img
@@ -279,7 +279,7 @@ export default function ProductPage() {
                   <button
                     type="button"
                     onClick={showPreviousImage}
-                    className="absolute left-4 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-white/92 p-3 text-ink shadow-sm transition hover:bg-white"
+                    className="absolute left-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-white/92 p-2.5 text-ink shadow-sm transition hover:bg-white sm:left-4 sm:p-3"
                     aria-label="Show previous product image"
                   >
                     <ChevronLeft size={18} />
@@ -287,7 +287,7 @@ export default function ProductPage() {
                   <button
                     type="button"
                     onClick={showNextImage}
-                    className="absolute right-4 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-white/92 p-3 text-ink shadow-sm transition hover:bg-white"
+                    className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-white/92 p-2.5 text-ink shadow-sm transition hover:bg-white sm:right-4 sm:p-3"
                     aria-label="Show next product image"
                   >
                     <ChevronRight size={18} />
@@ -299,7 +299,7 @@ export default function ProductPage() {
               ) : null}
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
               {product.gallery.map((image, index) => (
                 <button
                   key={`${product.id}-gallery-${index}`}
@@ -334,9 +334,9 @@ export default function ProductPage() {
                 ) : null}
               </div>
 
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h1 className="text-4xl font-semibold text-ink">{product.name}</h1>
+                  <h1 className="text-3xl font-semibold text-ink sm:text-4xl">{product.name}</h1>
                 </div>
                 <button
                   type="button"
@@ -369,8 +369,10 @@ export default function ProductPage() {
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-end gap-4">
-                <span className="text-4xl font-semibold text-ink">{formatMoney(product.price)}</span>
+              <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+                <span className="text-3xl font-semibold text-ink sm:text-4xl">
+                  {formatMoney(product.price)}
+                </span>
                 {product.compareAtPrice ? (
                   <span className="pb-1 text-lg text-stone-400 line-through">
                     {formatMoney(product.compareAtPrice)}
@@ -398,7 +400,7 @@ export default function ProductPage() {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-stone-200 p-6">
+            <div className="rounded-[2rem] border border-stone-200 p-5 sm:p-6">
               {isReadOnlyCustomer ? (
                 <div className="rounded-3xl bg-stone-50 p-5">
                   <p className="text-sm font-semibold text-ink">View-only customer access</p>
@@ -409,7 +411,7 @@ export default function ProductPage() {
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-ink">Quantity</p>
                       <p className="text-sm text-stone-500">
@@ -482,7 +484,7 @@ export default function ProductPage() {
               )}
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-3xl border border-stone-200 p-5">
                 <h2 className="text-lg font-semibold text-ink">Highlights</h2>
                 <ul className="mt-4 space-y-3 text-sm text-stone-600">
@@ -514,16 +516,18 @@ export default function ProductPage() {
       </section>
 
       <section
-        className="page-reveal grid gap-8 xl:grid-cols-[0.72fr_1.28fr]"
+        className="page-reveal grid gap-6 xl:grid-cols-[0.72fr_1.28fr] xl:gap-8"
         style={{ "--delay": "140ms" }}
       >
-        <div className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
+        <div className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
             All reviews
           </p>
-          <div className="mt-4 flex items-end gap-4">
+          <div className="mt-4 flex flex-wrap items-end gap-4">
             <div>
-              <p className="text-4xl font-semibold text-ink">{reviewSummary.average.toFixed(1)}</p>
+              <p className="text-3xl font-semibold text-ink sm:text-4xl">
+                {reviewSummary.average.toFixed(1)}
+              </p>
               <p className="text-sm text-stone-500">Average star rating</p>
             </div>
             <div className="pb-1">
@@ -568,22 +572,22 @@ export default function ProductPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
+          <div className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                   Review feed
                 </p>
-                <h2 className="mt-2 text-3xl font-semibold text-ink">
+                <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
                   Customer feedback for {product.name}
                 </h2>
               </div>
-              <label className="block">
+              <label className="block w-full sm:w-auto">
                 <span className="mb-2 block text-sm font-semibold text-ink">Sort reviews</span>
                 <select
                   value={reviewSort}
                   onChange={(event) => setReviewSort(event.target.value)}
-                  className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-900"
+                  className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-900 sm:min-w-[12rem]"
                 >
                   {Object.entries(reviewSortLabels).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -617,7 +621,7 @@ export default function ProductPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                 Customer access
               </p>
-              <h2 className="mt-2 text-3xl font-semibold text-ink">Browsing only</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">Browsing only</h2>
               <p className="mt-4 text-sm leading-7 text-stone-600">
                 Customers can only view product information in this build. Product creation and
                 other actions stay with the owner account.
@@ -628,7 +632,7 @@ export default function ProductPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                 Write a review
               </p>
-              <h2 className="mt-2 text-3xl font-semibold text-ink">
+              <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
                 Submit your own photos and rating
               </h2>
               <form className="mt-6 space-y-5" onSubmit={handleReviewSubmit}>
@@ -755,11 +759,13 @@ export default function ProductPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                 Related products
               </p>
-              <h2 className="mt-2 text-3xl font-semibold text-ink">More from the same line</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
+                More from the same line
+              </h2>
             </div>
           </div>
 
-          <div className="stagger-grid grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="stagger-grid grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {relatedProducts.map((item) => {
               const summary = getProductReviewSummary(publishedReviews, item.id);
               return (
