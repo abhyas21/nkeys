@@ -22,6 +22,19 @@ const upsertById = (records, nextRecord) => {
     ? records.map((record) => (record.id === nextRecord.id ? nextRecord : record))
     : [nextRecord, ...records];
 };
+const mergeProductsKeepingLocalOnly = (remoteProducts, currentProducts) => {
+  const localOnlyProducts = Array.isArray(currentProducts)
+    ? currentProducts.filter((product) => product?.syncState === "local-only")
+    : [];
+
+  if (!localOnlyProducts.length) {
+    return remoteProducts;
+  }
+
+  return localOnlyProducts.reduce((mergedProducts, product) => upsertById(mergedProducts, product), [
+    ...remoteProducts
+  ]);
+};
 
 const slugify = (value) => String(value || "")
   .trim()
@@ -106,7 +119,7 @@ export function StoreProvider({ children }) {
         setStore((current) => ({
           ...current,
           users: snapshot.users,
-          products: snapshot.products
+          products: mergeProductsKeepingLocalOnly(snapshot.products, current.products)
         }));
         setSyncStatusMessage("");
       } catch (error) {
@@ -512,12 +525,22 @@ export function StoreProvider({ children }) {
     }
   };
 
-  const submitOrder = ({ shipping, payment, shippingAmount = 0 }) => {
+  const submitOrder = ({
+    shipping,
+    payment,
+    shippingAmount = 0,
+    discountAmount = 0,
+    couponCode = "",
+    totalAmount
+  }) => {
     const matchedUser = store.users.find(
       (user) => normalizeEmail(user.email) === normalizeEmail(shipping.email)
     );
     const isCashOnDelivery =
       payment.method === "cod" || payment.method === "Cash on Delivery";
+    const normalizedShippingAmount = Math.max(0, Number(shippingAmount) || 0);
+    const normalizedDiscountAmount = Math.max(0, Number(discountAmount) || 0);
+    const computedTotal = Math.max(0, cartSubtotal + normalizedShippingAmount - normalizedDiscountAmount);
     const order = {
       id: createId("order"),
       number: `NK-${String(store.orders.length + 1025).padStart(5, "0")}`,
@@ -537,8 +560,10 @@ export function StoreProvider({ children }) {
         total: line.lineTotal
       })),
       subtotal: cartSubtotal,
-      shippingAmount,
-      total: cartSubtotal + shippingAmount
+      shippingAmount: normalizedShippingAmount,
+      discountAmount: normalizedDiscountAmount,
+      couponCode: String(couponCode || "").trim(),
+      total: Number.isFinite(Number(totalAmount)) ? Math.max(0, Number(totalAmount)) : computedTotal
     };
 
     setStore((current) => ({
@@ -585,14 +610,19 @@ export function StoreProvider({ children }) {
       uploadEnabled: Boolean(payload.uploadEnabled),
       featured: Boolean(payload.featured),
       inventory: Number(payload.inventory) || 0,
+      syncState: payload.syncState === "local-only" ? "local-only" : "synced",
       gallery: baseGallery,
       specs: normalizeStringList(payload.specs)
     };
 
     const saveLocally = (warningMessage = "") => {
+      const localProduct = {
+        ...nextProduct,
+        syncState: "local-only"
+      };
       setStore((current) => ({
         ...current,
-        products: upsertById(current.products, nextProduct)
+        products: upsertById(current.products, localProduct)
       }));
       setSyncStatusMessage(warningMessage);
       return {

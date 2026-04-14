@@ -160,6 +160,14 @@ export default function OrderSuccessPage() {
                 <span>Delivery</span>
                 <span>{formatMoney(order.shippingAmount ?? 0)}</span>
               </div>
+              {order.discountAmount ? (
+                <div className="mt-2 flex items-center justify-between text-sm text-emerald-700">
+                  <span>
+                    Discount{order.couponCode ? ` (${order.couponCode})` : ""}
+                  </span>
+                  <span>-{formatMoney(order.discountAmount)}</span>
+                </div>
+              ) : null}
               <div className="mt-3 flex items-center justify-between border-t border-stone-200 pt-3">
                 <span className="font-semibold text-ink">Total</span>
                 <span className="text-lg font-semibold text-ink">{formatMoney(order.total)}</span>

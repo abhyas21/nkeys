@@ -156,11 +156,16 @@ export default function AdminPage() {
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold text-ink">{product.name}</h2>
-                          {product.featured ? (
-                            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-800">
-                              New launch
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-semibold text-ink">{product.name}</h2>
+                        {product.syncState === "local-only" ? (
+                          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-800">
+                            Local only
+                          </span>
+                        ) : null}
+                        {product.featured ? (
+                          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-800">
+                            New launch
                             </span>
                           ) : null}
                         </div>

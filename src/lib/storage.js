@@ -5,6 +5,7 @@ export const STORE_KEY = "nkeys-react-store-v2";
 export const SESSION_KEY = `${STORE_KEY}:session`;
 
 const PRODUCT_TYPES = new Set(["sticker", "keychain"]);
+const PRODUCT_SYNC_STATES = new Set(["synced", "local-only"]);
 const REVIEW_STATUSES = new Set(["pending", "published", "hidden"]);
 const ORDER_STATUSES = new Set([
   "Pending confirmation",
@@ -177,6 +178,7 @@ function normalizeProducts(products, fallbackCategoryId) {
           uploadEnabled: booleanValue(product.uploadEnabled),
           featured: booleanValue(product.featured),
           inventory: integer(product.inventory),
+          syncState: PRODUCT_SYNC_STATES.has(product.syncState) ? product.syncState : "synced",
           gallery: gallery.length
             ? gallery
             : createFallbackGallery(
@@ -284,6 +286,8 @@ function normalizeOrders(orders) {
         items,
         subtotal: amount(order.subtotal),
         shippingAmount: amount(order.shippingAmount),
+        discountAmount: amount(order.discountAmount),
+        couponCode: text(order.couponCode),
         total: amount(order.total)
       };
     })

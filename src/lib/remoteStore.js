@@ -148,6 +148,7 @@ function toAppProduct(record, fallbackCategoryId) {
     uploadEnabled: booleanValue(record.upload_enabled),
     featured: booleanValue(record.featured),
     inventory: integer(record.inventory, 25),
+    syncState: "synced",
     gallery: images.length
       ? images
       : createFallbackGallery(name, shortDescription, type === "sticker" ? "#cc6a3d" : "#3f6755"),

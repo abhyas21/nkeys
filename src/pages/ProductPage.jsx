@@ -116,7 +116,6 @@ export default function ProductPage() {
   const reviews = getProductReviews(product.id);
   const reviewSummary = getProductReviewSummary(publishedReviews, product.id);
   const isOutOfStock = product.inventory <= 0;
-  const isReadOnlyCustomer = !isOwner;
   const liked = isLikedProduct(product.id);
   const maxQuantity = Math.max(1, product.inventory || 1);
   const activeImage = selectedImage || product.gallery[0];
@@ -401,87 +400,75 @@ export default function ProductPage() {
             </div>
 
             <div className="rounded-[2rem] border border-stone-200 p-5 sm:p-6">
-              {isReadOnlyCustomer ? (
-                <div className="rounded-3xl bg-stone-50 p-5">
-                  <p className="text-sm font-semibold text-ink">View-only customer access</p>
-                  <p className="mt-2 text-sm leading-7 text-stone-600">
-                    Customers can browse product images, descriptions, materials, and reviews.
-                    Purchase actions and product management are reserved for the owner account.
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-ink">Quantity</p>
+                  <p className="text-sm text-stone-500">
+                    {isOutOfStock
+                      ? "Currently unavailable."
+                      : `${product.inventory} units available in the current batch.`}
+                  </p>
+                </div>
+                <div className="inline-flex items-center rounded-full border border-stone-200">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                    disabled={isOutOfStock || quantity <= 1}
+                    className="p-3 text-stone-600 disabled:cursor-not-allowed disabled:text-stone-300"
+                    aria-label="Decrease quantity"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="min-w-12 text-center text-base font-semibold text-ink">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((current) => Math.min(maxQuantity, current + 1))}
+                    disabled={isOutOfStock || quantity >= maxQuantity}
+                    className="p-3 text-stone-600 disabled:cursor-not-allowed disabled:text-stone-300"
+                    aria-label="Increase quantity"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {product.uploadEnabled ? (
+                <div className="mt-5">
+                  <FileUploadField
+                    fileName={designFileName}
+                    onChange={(file) => setDesignFileName(file?.name || "")}
+                    accept=".png,.jpg,.jpeg,.pdf,.svg"
+                  />
+                  <p className="mt-3 text-xs leading-6 text-stone-500">
+                    Upload is optional in this frontend demo. The selected file name is attached to the cart line item.
                   </p>
                 </div>
               ) : (
-                <>
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-ink">Quantity</p>
-                      <p className="text-sm text-stone-500">
-                        {isOutOfStock
-                          ? "Currently unavailable."
-                          : `${product.inventory} units available in the current batch.`}
-                      </p>
-                    </div>
-                    <div className="inline-flex items-center rounded-full border border-stone-200">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                        disabled={isOutOfStock || quantity <= 1}
-                        className="p-3 text-stone-600 disabled:cursor-not-allowed disabled:text-stone-300"
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span className="min-w-12 text-center text-base font-semibold text-ink">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity((current) => Math.min(maxQuantity, current + 1))}
-                        disabled={isOutOfStock || quantity >= maxQuantity}
-                        className="p-3 text-stone-600 disabled:cursor-not-allowed disabled:text-stone-300"
-                        aria-label="Increase quantity"
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {product.uploadEnabled ? (
-                    <div className="mt-5">
-                      <FileUploadField
-                        fileName={designFileName}
-                        onChange={(file) => setDesignFileName(file?.name || "")}
-                        accept=".png,.jpg,.jpeg,.pdf,.svg"
-                      />
-                      <p className="mt-3 text-xs leading-6 text-stone-500">
-                        Upload is optional in this frontend demo. The selected file name is attached to the cart line item.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mt-5 rounded-2xl bg-stone-50 p-4 text-sm leading-7 text-stone-600">
-                      This item ships with built-in engraving or finishing options and does not require an artwork upload.
-                    </div>
-                  )}
-
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                    <button
-                      type="button"
-                      onClick={handleAddToCart}
-                      disabled={isOutOfStock}
-                      className="inline-flex flex-1 items-center justify-center rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-300"
-                    >
-                      {isOutOfStock ? "Sold out" : "Add to cart"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleBuyNow}
-                      disabled={isOutOfStock}
-                      className="inline-flex flex-1 items-center justify-center rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900 disabled:cursor-not-allowed disabled:border-stone-200 disabled:text-stone-400"
-                    >
-                      Buy now
-                    </button>
-                  </div>
-                </>
+                <div className="mt-5 rounded-2xl bg-stone-50 p-4 text-sm leading-7 text-stone-600">
+                  This item ships with built-in engraving or finishing options and does not require an artwork upload.
+                </div>
               )}
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={isOutOfStock}
+                  className="inline-flex flex-1 items-center justify-center rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+                >
+                  {isOutOfStock ? "Sold out" : "Add to cart"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={isOutOfStock}
+                  className="inline-flex flex-1 items-center justify-center rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900 disabled:cursor-not-allowed disabled:border-stone-200 disabled:text-stone-400"
+                >
+                  Buy now
+                </button>
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -561,11 +548,7 @@ export default function ProductPage() {
             </div>
             <ul className="mt-3 space-y-2 text-sm leading-7 text-stone-600">
               <li>Verified Purchase badges are linked to paid or fulfilled orders by email and product.</li>
-              <li>
-                {isReadOnlyCustomer
-                  ? "Customers can browse reviews and product media in read-only mode."
-                  : "Owner mode can submit photos and helpful votes directly from the product page."}
-              </li>
+              <li>Customers can submit review photos and mark helpful reviews directly from the product page.</li>
               <li>New submissions stay pending until they are published from the admin dashboard.</li>
             </ul>
           </div>
@@ -604,7 +587,7 @@ export default function ProductPage() {
                   <ReviewCard
                     key={review.id}
                     review={review}
-                    onHelpful={isReadOnlyCustomer ? null : toggleHelpful}
+                    onHelpful={toggleHelpful}
                     hasVoted={helpfulVotes.includes(review.id)}
                   />
                 ))
@@ -616,26 +599,14 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {isReadOnlyCustomer ? (
-            <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
-                Customer access
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">Browsing only</h2>
-              <p className="mt-4 text-sm leading-7 text-stone-600">
-                Customers can only view product information in this build. Product creation and
-                other actions stay with the owner account.
-              </p>
-            </section>
-          ) : (
-            <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
-                Write a review
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
-                Submit your own photos and rating
-              </h2>
-              <form className="mt-6 space-y-5" onSubmit={handleReviewSubmit}>
+          <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
+              Write a review
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
+              Submit your own photos and rating
+            </h2>
+            <form className="mt-6 space-y-5" onSubmit={handleReviewSubmit}>
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="block">
                     <span className="mb-2 block text-sm font-semibold text-ink">Name</span>
@@ -740,15 +711,14 @@ export default function ProductPage() {
                   </p>
                 ) : null}
 
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
-                >
-                  Submit review
-                </button>
-              </form>
-            </section>
-          )}
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
+              >
+                Submit review
+              </button>
+            </form>
+          </section>
         </div>
       </section>
 
