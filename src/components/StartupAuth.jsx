@@ -3,8 +3,6 @@ import {
   Mail,
   ShieldCheck,
   Smartphone,
-  Sparkles,
-  Store,
   UserRound
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -12,9 +10,9 @@ import { useStore } from "../context/StoreContext";
 import {
   formatPhoneForOtp,
   getLiveVerificationSetupMessage,
+  getVerifiedVerificationProfile,
   getVerificationDeliveryTarget,
   isEmailVerificationEnabled,
-  isPhoneVerificationConfigured,
   isPhoneVerificationEnabled,
   isVerificationMethodReady,
   sendVerificationCode,
@@ -23,6 +21,7 @@ import {
 
 const initialForm = {
   name: "",
+  gender: "",
   email: "",
   phone: "",
   verificationMethod: "email",
@@ -58,17 +57,68 @@ export default function StartupAuth() {
     return () => window.clearTimeout(timer);
   }, [cooldownSeconds]);
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    const restoreVerifiedSession = async () => {
+      if (!isEmailVerificationEnabled) {
+        return;
+      }
+
+      const { data, error } = await getVerifiedVerificationProfile();
+
+      if (isCancelled || !data?.email) {
+        if (!isCancelled && error) {
+          setErrorMessage(error.message);
+          setInfoMessage("");
+        }
+        return;
+      }
+
+      if (!data.name || !data.phone) {
+        if (!isCancelled) {
+          setInfoMessage(
+            "Email verification returned successfully, but the profile details were incomplete. Enter your details again and request a fresh code."
+          );
+        }
+        return;
+      }
+
+      const session = await signInCustomer({
+        name: data.name,
+        gender: data.gender,
+        email: data.email,
+        phone: data.phone,
+        verifiedBy: "email"
+      });
+
+      if (isCancelled) {
+        return;
+      }
+
+      if (!session) {
+        setErrorMessage(
+          "Email verification succeeded, but the storefront session could not be created. Try sending a fresh code."
+        );
+        setInfoMessage("");
+        return;
+      }
+
+      setErrorMessage("");
+      setInfoMessage("Email verification completed. Redirecting into the storefront.");
+    };
+
+    restoreVerifiedSession();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [signInCustomer]);
+
   const deliveryTarget = useMemo(
     () => getVerificationDeliveryTarget(form.verificationMethod, form),
     [form]
   );
-  const verificationHighlights = [
-    "Name, mobile, and email captured in one step",
-    isPhoneVerificationEnabled
-      ? "Live email and mobile OTP delivery through Supabase and Firebase"
-      : "Live email code delivery through Supabase Auth",
-    "Same verified entry for customers and owner"
-  ];
   const verificationOptions = [
     {
       value: "email",
@@ -78,49 +128,138 @@ export default function StartupAuth() {
     },
     ...(isPhoneVerificationEnabled
       ? [
-          {
-            value: "phone",
-            label: "Mobile verification",
-            copy: "Send a live OTP to the saved phone number.",
-            icon: Smartphone
-          }
-        ]
+        {
+          value: "phone",
+          label: "Mobile verification",
+          copy: "Send a live OTP to the saved phone number.",
+          icon: Smartphone
+        }
+      ]
       : [])
   ];
-  const verificationChannelLabel = isPhoneVerificationEnabled ? "email or mobile OTP" : "email";
   const codeConstraints =
     form.verificationMethod === "phone"
       ? {
-          min: PHONE_OTP_LENGTH,
-          max: PHONE_OTP_LENGTH,
-          label: "6-digit",
-          placeholder: "6-digit code"
-        }
+        min: PHONE_OTP_LENGTH,
+        max: PHONE_OTP_LENGTH,
+        label: "6-digit",
+        placeholder: "6-digit code"
+      }
       : {
-          min: EMAIL_OTP_MIN_LENGTH,
-          max: EMAIL_OTP_MAX_LENGTH,
-          label: "6 to 8-digit",
-          placeholder: "6 to 8-digit code"
-        };
-  const verificationLiveLabel =
-    isEmailVerificationEnabled && isPhoneVerificationConfigured
-      ? "Live email and mobile verification are active."
-      : isEmailVerificationEnabled
-        ? "Live email verification is active."
-        : isPhoneVerificationConfigured
-          ? "Live mobile verification is active."
-          : "Live verification setup is still required.";
-  const verificationSetupCopy = isPhoneVerificationEnabled
-    ? "Add Supabase email OTP, or enable Firebase Phone Authentication for mobile OTP."
-    : "Add your Supabase keys and enable email OTP to send real verification codes.";
-  const liveVerificationDescription =
-    isEmailVerificationEnabled && isPhoneVerificationConfigured
-      ? "Email codes are sent by Supabase Auth and mobile OTP is sent by Firebase Phone Auth."
-      : isEmailVerificationEnabled
-        ? "Codes are sent by Supabase Auth and verified before the storefront unlocks."
-        : isPhoneVerificationConfigured
-          ? "Mobile OTP is sent by Firebase Phone Auth and verified before the storefront unlocks."
-          : verificationSetupCopy;
+        min: EMAIL_OTP_MIN_LENGTH,
+        max: EMAIL_OTP_MAX_LENGTH,
+        label: "6 to 8-digit",
+        placeholder: "6 to 8-digit code"
+      };
+  const selectedGender = form.gender.trim().toLowerCase();
+  const isMaleTheme = selectedGender === "male";
+  const isFemaleTheme = selectedGender === "female";
+  const pageClassName = isMaleTheme
+    ? "relative overflow-hidden bg-[#120d0b] text-stone-100"
+    : isFemaleTheme
+      ? "relative overflow-hidden bg-[#fff2f8] text-ink"
+      : "relative overflow-hidden bg-stone-50 text-ink dark:bg-stone-950 dark:text-stone-100";
+  const pageStyle = isMaleTheme
+    ? {
+      backgroundColor: "#120d0b",
+      backgroundImage:
+        "radial-gradient(circle at 18% 18%, rgba(210,138,86,0.24), transparent 20%), radial-gradient(circle at 82% 12%, rgba(255,232,205,0.08), transparent 18%), radial-gradient(circle at 24% 82%, rgba(104,67,43,0.34), transparent 24%), linear-gradient(160deg, rgba(28,20,16,1), rgba(18,13,11,1) 52%, rgba(9,7,6,1))"
+    }
+    : isFemaleTheme
+      ? {
+        backgroundColor: "#fff2f8",
+        backgroundImage:
+          "radial-gradient(circle at 16% 14%, rgba(244,143,177,0.28), transparent 20%), radial-gradient(circle at 84% 16%, rgba(255,206,225,0.3), transparent 22%), radial-gradient(circle at 22% 84%, rgba(214,98,140,0.18), transparent 24%), linear-gradient(180deg, rgba(255,251,253,1), rgba(255,238,246,1))"
+      }
+      : undefined;
+  const panelClassName = isMaleTheme
+    ? "border-[#7b5337]/45 bg-[#1a1310]/95 text-white shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
+    : isFemaleTheme
+      ? "border-[#efbfd1] bg-[#fffafc] shadow-[0_30px_80px_rgba(217,104,149,0.14)]"
+      : "border-[#ddcdbc] bg-[#fffaf3] dark:border-[#3a2d25] dark:bg-[#211915]";
+  const panelStyle = isMaleTheme
+    ? {
+      backgroundImage:
+        "linear-gradient(160deg, rgba(42,29,23,0.98), rgba(24,18,14,0.98))"
+    }
+    : isFemaleTheme
+      ? {
+        backgroundImage:
+          "linear-gradient(160deg, rgba(255,252,253,0.98), rgba(255,244,248,0.98))"
+      }
+      : undefined;
+  const eyebrowClassName = isMaleTheme
+    ? "text-[#d1b299]"
+    : isFemaleTheme
+      ? "text-[#b55c84]"
+      : "text-stone-500";
+  const headingClassName = isMaleTheme
+    ? "text-[#fff3e4]"
+    : isFemaleTheme
+      ? "text-[#6a2645]"
+      : "text-ink dark:text-white";
+  const bodyClassName = isMaleTheme
+    ? "text-[#d8c2ae]"
+    : isFemaleTheme
+      ? "text-[#8a5d73]"
+      : "text-stone-600 dark:text-stone-400";
+  const fieldLabelClassName = isMaleTheme
+    ? "text-[#fff3e4]"
+    : isFemaleTheme
+      ? "text-[#6a2645]"
+      : "text-ink dark:text-white";
+  const iconBadgeClassName = isMaleTheme
+    ? "bg-[linear-gradient(135deg,#d28a56,#9e623d)] text-white shadow-lg shadow-[#d28a56]/20"
+    : isFemaleTheme
+      ? "bg-[linear-gradient(135deg,#f38cb5,#d86895)] text-white shadow-lg shadow-[#f38cb5]/25"
+      : "bg-sand text-terracotta";
+  const inputClassName = isMaleTheme
+    ? "w-full rounded-2xl border border-[#7b5337]/50 bg-[#fff8ef] px-4 py-3 text-sm text-ink placeholder:text-[#9f8a78] outline-none transition focus:border-[#d28a56] focus:ring-2 focus:ring-[#d28a56]/15"
+    : isFemaleTheme
+      ? "w-full rounded-2xl border border-[#efbfd1] bg-[#fffafe] px-4 py-3 text-sm text-ink placeholder:text-[#b893a4] outline-none transition focus:border-[#e27ca6] focus:ring-2 focus:ring-[#e27ca6]/15"
+      : "w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-ink placeholder:text-stone-400 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10";
+  const selectClassName = isMaleTheme
+    ? "w-full rounded-2xl border border-[#7b5337]/50 bg-[#fff8ef] px-4 py-3 text-sm text-ink outline-none transition focus:border-[#d28a56] focus:ring-2 focus:ring-[#d28a56]/15 appearance-none bg-no-repeat"
+    : isFemaleTheme
+      ? "w-full rounded-2xl border border-[#efbfd1] bg-[#fffafe] px-4 py-3 text-sm text-ink outline-none transition focus:border-[#e27ca6] focus:ring-2 focus:ring-[#e27ca6]/15 appearance-none bg-no-repeat"
+      : "w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-ink outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 appearance-none bg-no-repeat";
+  const infoCardClassName = isMaleTheme
+    ? "rounded-3xl border border-[#7b5337]/35 bg-[#241915]/88 p-5"
+    : isFemaleTheme
+      ? "rounded-3xl border border-[#efbfd1] bg-[#fff0f6] p-5"
+      : "rounded-3xl border border-stone-200 bg-stone-50 p-5 dark:border-[#3a2d25] dark:bg-[#2a201a]";
+  const actionCardClassName = isMaleTheme
+    ? "rounded-3xl border border-[#7b5337]/35 bg-[#2a1d18]/92 p-5"
+    : isFemaleTheme
+      ? "rounded-3xl border border-[#efbfd1] bg-[#ffe6f1] p-5"
+      : "rounded-3xl bg-sand p-5";
+  const methodCardClassName = (isActive) => {
+    if (isMaleTheme) {
+      return isActive
+        ? "border-[#d28a56] bg-[linear-gradient(135deg,#d28a56,#9e623d)] text-white shadow-lg shadow-[#d28a56]/20"
+        : "border-[#7b5337]/35 bg-[#241915]/88 text-[#e3cdb8]";
+    }
+
+    if (isFemaleTheme) {
+      return isActive
+        ? "border-[#e27ca6] bg-[linear-gradient(135deg,#f38cb5,#d86895)] text-white shadow-lg shadow-[#f38cb5]/20"
+        : "border-[#efbfd1] bg-white text-[#8a5d73]";
+    }
+
+    return isActive
+      ? "border-stone-900 bg-stone-900 text-white"
+      : "border-stone-200 bg-stone-50 text-stone-600";
+  };
+  const primaryButtonClassName = isMaleTheme
+    ? "inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#d28a56,#9e623d)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-stone-500 disabled:text-white"
+    : isFemaleTheme
+      ? "inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#f38cb5,#d86895)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:bg-[#d9a6bb]"
+      : "inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-400";
+  const submitButtonClassName = isMaleTheme
+    ? "inline-flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#d28a56,#9e623d)] px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-stone-500 disabled:text-white"
+    : isFemaleTheme
+      ? "inline-flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#f38cb5,#d86895)] px-6 py-3 text-sm font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:bg-[#d9a6bb]"
+      : "inline-flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-400";
 
   const sendButtonLabel = cooldownSeconds
     ? `Resend in ${cooldownSeconds}s`
@@ -143,11 +282,12 @@ export default function StartupAuth() {
 
   const validateDetails = () => {
     const trimmedName = form.name.trim();
+    const trimmedGender = form.gender.trim();
     const trimmedEmail = form.email.trim();
     const trimmedPhone = sanitizePhone(form.phone);
 
-    if (!trimmedName || !trimmedEmail || !trimmedPhone) {
-      return "Enter your name, email, and mobile number to continue.";
+    if (!trimmedName || !trimmedGender || !trimmedEmail || !trimmedPhone) {
+      return "Enter your name, gender, email, and mobile number to continue.";
     }
 
     if (!emailPattern.test(trimmedEmail)) {
@@ -180,6 +320,7 @@ export default function StartupAuth() {
     try {
       const { error, deliveryTarget: target } = await sendVerificationCode({
         name: form.name.trim(),
+        gender: form.gender.trim(),
         email: form.email.trim(),
         phone: form.phone,
         verificationMethod: form.verificationMethod
@@ -198,7 +339,7 @@ export default function StartupAuth() {
       setInfoMessage(
         form.verificationMethod === "phone"
           ? `OTP sent to ${target || formatPhoneForOtp(form.phone)}. Enter the SMS code to continue.`
-          : `Verification code sent to ${target || form.email.trim()}. Check your inbox and spam folder.`
+          : `Verification code sent to ${target || form.email.trim()}. Check your inbox and spam folder. If the email shows a link instead of digits, update the Supabase email template to use {{ .Token }}.`
       );
     } finally {
       setIsSendingCode(false);
@@ -250,6 +391,7 @@ export default function StartupAuth() {
 
       const session = await signInCustomer({
         name: form.name.trim(),
+        gender: form.gender.trim(),
         email: form.email.trim(),
         phone: form.phone,
         verifiedBy: form.verificationMethod
@@ -268,116 +410,113 @@ export default function StartupAuth() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 px-4 py-8 text-ink sm:px-6 lg:px-8">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-7xl gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="page-reveal flex flex-col justify-between rounded-[2rem] border border-stone-200 bg-white p-8 shadow-soft lg:p-12">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-3 rounded-full bg-sand px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-stone-600">
-              <Store size={14} className="text-terracotta" />
-              Login to enter NKeys
-            </div>
-
-            <div className="space-y-4">
-              <h1 className="max-w-2xl font-sans text-4xl font-semibold leading-tight text-ink md:text-5xl">
-                Start with a verified login before entering the store.
-              </h1>
-              <p className="max-w-2xl text-base leading-8 text-stone-600 md:text-lg">
-                Enter your name, phone number, and email once. Then request a live verification
-                code through {verificationChannelLabel} and use that code to open the storefront.
-              </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              {verificationHighlights.map((item) => (
-                <article key={item} className="lift-card rounded-3xl bg-sand p-5">
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-terracotta shadow-sm">
-                    <Sparkles size={18} />
-                  </span>
-                  <p className="mt-4 text-sm leading-7 text-stone-700">{item}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-[1.8rem] border border-stone-200 bg-stone-950 p-6 text-white">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-stone-300">
-              <ShieldCheck size={14} />
-              Verification
-            </div>
-            <p className="mt-3 text-lg font-semibold">
-              {verificationLiveLabel}
-            </p>
-            <p className="mt-3 text-sm leading-7 text-stone-300">
-              {liveVerificationDescription}
-            </p>
-          </div>
-        </section>
-
+    <div
+      className={`min-h-screen px-4 py-8 sm:px-6 lg:px-8 ${pageClassName}`}
+      style={pageStyle}
+    >
+      {isMaleTheme ? (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-20 right-[-4rem] h-72 w-72 rounded-full bg-[#d28a56]/20 blur-3xl" />
+          <div className="absolute bottom-[-4rem] left-[-3rem] h-80 w-80 rounded-full bg-[#6f4a32]/30 blur-3xl" />
+          <div className="absolute left-1/2 top-24 h-px w-[60%] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#d9a57d]/35 to-transparent" />
+        </div>
+      ) : null}
+      {isFemaleTheme ? (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-16 right-[-3rem] h-72 w-72 rounded-full bg-[#f3a5c5]/28 blur-3xl" />
+          <div className="absolute bottom-[-4rem] left-[-3rem] h-80 w-80 rounded-full bg-[#f9cadc]/34 blur-3xl" />
+          <div className="absolute left-1/2 top-24 h-px w-[60%] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#f3a5c5]/40 to-transparent" />
+        </div>
+      ) : null}
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-3xl items-center justify-center">
         <section
-          className="page-reveal-right rounded-[2rem] border border-stone-200 bg-white p-8 shadow-soft lg:p-10"
-          style={{ "--delay": "120ms" }}
+          className={`page-reveal-right w-full rounded-[2rem] border p-8 shadow-soft lg:p-10 ${panelClassName}`}
+          style={panelStyle}
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
+              <p className={`text-xs font-semibold uppercase tracking-[0.22em] ${eyebrowClassName}`}>
                 Verify identity
               </p>
-              <h2 className="mt-2 text-3xl font-semibold text-ink">Name, mobile, email</h2>
+              <h1 className={`mt-2 text-3xl font-semibold ${headingClassName}`}>Name, mobile, email</h1>
+              <p className={`mt-3 max-w-xl text-sm leading-7 ${bodyClassName}`}>
+                Enter your details, request the verification code, then use it to continue into
+                the store.
+              </p>
             </div>
-            <span className="motion-float inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sand text-terracotta">
+            <span className={`motion-float inline-flex h-12 w-12 items-center justify-center rounded-2xl ${iconBadgeClassName}`}>
               <UserRound size={20} />
             </span>
           </div>
 
           <form className="mt-8 space-y-5" onSubmit={handleVerify}>
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-ink">Full name</span>
-              <input
-                value={form.name}
-                onChange={(event) => updateField("name", event.target.value)}
-                placeholder="Enter your full name"
-                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-900"
-              />
-            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className={`mb-2 block text-sm font-semibold ${fieldLabelClassName}`}>Full name</span>
+                <input
+                  value={form.name}
+                  onChange={(event) => updateField("name", event.target.value)}
+                  placeholder="Enter your full name"
+                  className={inputClassName}
+                />
+              </label>
+
+              <label className="block">
+                <span className={`mb-2 block text-sm font-semibold ${fieldLabelClassName}`}>Gender</span>
+                <select
+                  value={form.gender}
+                  onChange={(event) => updateField("gender", event.target.value)}
+                  className={selectClassName}
+                  style={{
+                    backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')`,
+                    backgroundPosition: "right 1rem center",
+                    paddingRight: "2.5rem",
+                    colorScheme: "light"
+                  }}
+                >
+                  <option value="" disabled style={{ color: "#7c6b61", backgroundColor: "#ffffff" }}>Select gender</option>
+                  <option value="Male" style={{ color: "#241812", backgroundColor: "#ffffff" }}>Male</option>
+                  <option value="Female" style={{ color: "#241812", backgroundColor: "#ffffff" }}>Female</option>
+                </select>
+              </label>
+            </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-ink">Mobile number</span>
+                <span className={`mb-2 block text-sm font-semibold ${fieldLabelClassName}`}>Mobile number</span>
                 <input
                   inputMode="numeric"
                   value={form.phone}
                   onChange={(event) => updateField("phone", event.target.value)}
                   placeholder="10-digit mobile"
-                  className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-900"
+                  className={inputClassName}
                 />
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-ink">Email</span>
+                <span className={`mb-2 block text-sm font-semibold ${fieldLabelClassName}`}>Email</span>
                 <input
                   type="email"
                   value={form.email}
                   onChange={(event) => updateField("email", event.target.value)}
                   placeholder="you@example.com"
-                  className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-900"
+                  className={inputClassName}
                 />
               </label>
             </div>
 
             {isPhoneVerificationEnabled ? (
               <div>
-                <span className="mb-3 block text-sm font-semibold text-ink">Verify with</span>
+                <span className={`mb-3 block text-sm font-semibold ${fieldLabelClassName}`}>Verify with</span>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {verificationOptions.map((option) => (
                     <button
                       key={option.value}
                       type="button"
                       onClick={() => updateField("verificationMethod", option.value)}
-                      className={`rounded-3xl border p-5 text-left transition ${
+                      className={`rounded-3xl border p-5 text-left transition ${methodCardClassName(
                         form.verificationMethod === option.value
-                          ? "border-stone-900 bg-stone-900 text-white"
-                          : "border-stone-200 bg-stone-50 text-stone-600"
-                      }`}
+                      )}`}
                     >
                       <div className="flex items-center gap-2">
                         <option.icon size={18} />
@@ -389,33 +528,32 @@ export default function StartupAuth() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
-                <div className="flex items-center gap-2 text-ink">
+              <div className={infoCardClassName}>
+                <div className={`flex items-center gap-2 ${fieldLabelClassName}`}>
                   <Mail size={18} />
                   <p className="text-base font-semibold">Email verification</p>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-stone-600">
+                <p className={`mt-2 text-sm leading-6 ${bodyClassName}`}>
                   The website is using email OTP for verified entry. Mobile numbers are still
                   captured for orders and customer support.
                 </p>
               </div>
             )}
 
-            <div className="rounded-3xl bg-sand p-5">
+            <div className={actionCardClassName}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-ink">
+                  <p className={`text-sm font-semibold ${fieldLabelClassName}`}>
                     {form.verificationMethod === "phone"
                       ? "Verify with mobile OTP"
                       : "Verify with email code"}
                   </p>
-                  <p className="mt-1 text-sm leading-6 text-stone-600">
+                  <p className={`mt-1 text-sm leading-6 ${bodyClassName}`}>
                     {deliveryTarget
-                      ? `The code will be sent to ${
-                          form.verificationMethod === "phone"
-                            ? deliveryTarget
-                            : form.email.trim().toLowerCase()
-                        }.`
+                      ? `The code will be sent to ${form.verificationMethod === "phone"
+                        ? deliveryTarget
+                        : form.email.trim().toLowerCase()
+                      }.`
                       : "Complete your details first, then send the code."}
                   </p>
                 </div>
@@ -423,7 +561,7 @@ export default function StartupAuth() {
                   type="button"
                   onClick={handleSendCode}
                   disabled={isSendingCode || isSubmitting || Boolean(cooldownSeconds)}
-                  className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-400"
+                  className={primaryButtonClassName}
                 >
                   {isSendingCode ? "Sending..." : sendButtonLabel}
                   <BadgeCheck size={16} />
@@ -432,7 +570,7 @@ export default function StartupAuth() {
             </div>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-ink">
+              <span className={`mb-2 block text-sm font-semibold ${fieldLabelClassName}`}>
                 Enter verification code
               </span>
               <input
@@ -442,9 +580,23 @@ export default function StartupAuth() {
                   updateField("code", event.target.value.replace(/\D/g, "").slice(0, codeConstraints.max))
                 }
                 placeholder={codeConstraints.placeholder}
-                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-900"
+                className={inputClassName}
               />
             </label>
+
+            {form.verificationMethod === "email" ? (
+              <p className={`rounded-2xl px-4 py-3 text-sm leading-6 ${isMaleTheme
+                ? "bg-white/5 text-stone-300"
+                : isFemaleTheme
+                  ? "bg-[#fff0f6] text-[#7a5a68]"
+                  : "bg-stone-50 text-stone-600 dark:bg-[#2a201a] dark:text-stone-400"
+                }`}>
+                Supabase email codes are manual digits only when the email template uses
+                {" "}
+                <span className={`font-semibold ${headingClassName}`}>{`{{ .Token }}`}</span>.
+                If you receive a "Confirm your signup" link instead, change the Supabase email template.
+              </p>
+            ) : null}
 
             {isPhoneVerificationEnabled ? <div id="recaptcha-container"></div> : null}
 
@@ -469,7 +621,7 @@ export default function StartupAuth() {
             <button
               type="submit"
               disabled={isSubmitting || isSendingCode}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-400"
+              className={submitButtonClassName}
             >
               {isSubmitting ? "Verifying..." : "Verify and enter store"}
               <ShieldCheck size={16} />

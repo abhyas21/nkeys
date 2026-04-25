@@ -49,6 +49,12 @@ To make it work end-to-end:
 4. Add your project URL to `Authentication -> URL Configuration` if your setup requires it
 5. Restart the Vite dev server after saving `.env`
 
+Important:
+
+- For manual email OTP entry, Supabase email templates must include `{{ .Token }}`.
+- If the template keeps only `{{ .ConfirmationURL }}`, the user will receive a link instead of a numeric code.
+- If you open email links on a phone while the app is running only on `localhost` on your computer, the link will fail on the phone. For cross-device testing, use the numeric OTP email template or run the app on a LAN/deployed URL.
+
 What the app now does:
 
 - `Send code` calls `supabase.auth.signInWithOtp(...)`

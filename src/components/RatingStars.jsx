@@ -11,7 +11,8 @@ export default function RatingStars({ rating = 0, size = 16, className = "" }) {
           <Star
             key={index}
             size={size}
-            className={active ? "fill-amber-400 text-amber-400" : "text-stone-300"}
+            className={`transition-all duration-300 ease-out hover:scale-125 hover:rotate-[15deg] cursor-default ${active ? "fill-amber-400 text-amber-400" : "text-stone-300 dark:text-stone-600"
+              }`}
           />
         );
       })}

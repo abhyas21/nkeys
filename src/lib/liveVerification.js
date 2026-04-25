@@ -1,7 +1,7 @@
 import { normalizeEmail } from "./auth";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { firebaseApp } from "./firebase";
-import { isSupabaseConfigured, supabase } from "./supabase";
+import { isSupabaseConfigured, SUPABASE_URL, supabase } from "./supabase";
 
 const DEFAULT_COUNTRY_CODE = import.meta.env.VITE_DEFAULT_COUNTRY_CODE || "+91";
 const PHONE_OTP_ENABLED_VALUES = new Set(["1", "true", "yes", "on"]);
@@ -19,11 +19,65 @@ export const isLiveVerificationConfigured =
 
 let confirmationResult = null;
 
-const buildUserMetadata = ({ name, email, phone }) => ({
+const buildUserMetadata = ({ name, gender, email, phone }) => ({
   name: String(name || "").trim(),
+  gender: String(gender || "").trim(),
   email: normalizeEmail(email),
   phone: normalizePhoneDigits(phone)
 });
+
+const buildVerificationProfile = (user) => {
+  if (!user) {
+    return null;
+  }
+
+  const metadata = user.user_metadata || {};
+  const email = normalizeEmail(user.email || metadata.email);
+
+  if (!email) {
+    return null;
+  }
+
+  return {
+    name: String(metadata.name || metadata.full_name || "").trim(),
+    gender: String(metadata.gender || "").trim(),
+    email,
+    phone: normalizePhoneDigits(metadata.phone)
+  };
+};
+
+const getEmailRedirectUrl = () => {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  return new URL("/verify", window.location.origin).toString();
+};
+
+const getSupabaseHostLabel = () => {
+  try {
+    return new URL(SUPABASE_URL).host;
+  } catch {
+    return String(SUPABASE_URL || "").trim();
+  }
+};
+
+const getAuthCallbackErrorMessage = () => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const url = new URL(window.location.href);
+  const hashParams = new URLSearchParams(url.hash.startsWith("#") ? url.hash.slice(1) : url.hash);
+
+  return (
+    hashParams.get("error_description") ||
+    hashParams.get("error") ||
+    url.searchParams.get("error_description") ||
+    url.searchParams.get("error") ||
+    ""
+  );
+};
 
 const mapEmailAuthError = (error, phase) => {
   const fallback =
@@ -52,6 +106,18 @@ const mapEmailAuthError = (error, phase) => {
 
   if (normalized.includes("invalid token") || normalized.includes("token has expired")) {
     return "The verification code is invalid or expired. Request a fresh code and try again.";
+  }
+
+  if (
+    normalized.includes("failed to fetch") ||
+    normalized.includes("fetch failed") ||
+    normalized.includes("networkerror") ||
+    normalized.includes("load failed")
+  ) {
+    const host = getSupabaseHostLabel();
+    return host
+      ? `Supabase could not be reached at ${host}. Check VITE_SUPABASE_URL in .env and copy the exact Project URL from Supabase Settings -> API.`
+      : "Supabase could not be reached. Check VITE_SUPABASE_URL in .env and copy the exact Project URL from Supabase Settings -> API.";
   }
 
   return message;
@@ -92,7 +158,7 @@ export function getLiveVerificationSetupMessage(verificationMethod = "email") {
       : "Mobile OTP is turned off for this storefront. Set VITE_ENABLE_PHONE_OTP=true to enable it.";
   }
 
-  return "Live email verification needs Supabase Auth plus email OTP enabled.";
+  return "Live email verification needs Supabase Auth with the email provider enabled. For manual digits instead of a link, use {{ .Token }} in the Supabase email template.";
 }
 
 export function isVerificationMethodReady(verificationMethod) {
@@ -137,7 +203,7 @@ function initRecaptcha() {
   return window.recaptchaVerifier;
 }
 
-export async function sendVerificationCode({ name, email, phone, verificationMethod }) {
+export async function sendVerificationCode({ name, gender, email, phone, verificationMethod }) {
   if (verificationMethod === "phone") {
     if (!isVerificationMethodReady("phone")) {
       return {
@@ -168,7 +234,7 @@ export async function sendVerificationCode({ name, email, phone, verificationMet
           if (window.grecaptcha) {
             window.grecaptcha.reset(widgetId);
           }
-        }).catch(() => {});
+        }).catch(() => { });
       }
 
       return {
@@ -183,15 +249,22 @@ export async function sendVerificationCode({ name, email, phone, verificationMet
     };
   }
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email: normalizeEmail(email),
-    options: {
-      shouldCreateUser: true,
-      data: buildUserMetadata({ name, email, phone })
-    }
-  });
+  try {
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalizeEmail(email),
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: getEmailRedirectUrl(),
+        data: buildUserMetadata({ name, gender, email, phone })
+      }
+    });
 
-  if (error) {
+    if (error) {
+      return {
+        error: new Error(mapEmailAuthError(error, "send"))
+      };
+    }
+  } catch (error) {
     return {
       error: new Error(mapEmailAuthError(error, "send"))
     };
@@ -238,11 +311,52 @@ export async function verifyVerificationCode({ email, verificationMethod, code }
     };
   }
 
-  const { data, error } = await supabase.auth.verifyOtp({
-    email: normalizeEmail(email),
-    token: String(code || "").trim(),
-    type: "email"
-  });
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: normalizeEmail(email),
+      token: String(code || "").trim(),
+      type: "email"
+    });
+
+    if (error) {
+      return {
+        data: null,
+        error: new Error(mapEmailAuthError(error, "verify"))
+      };
+    }
+
+    return {
+      data,
+      error: null
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: new Error(mapEmailAuthError(error, "verify"))
+    };
+  }
+}
+
+export async function getVerifiedVerificationProfile() {
+  if (!isEmailVerificationEnabled || !supabase) {
+    return {
+      data: null,
+      error: null
+    };
+  }
+
+  const callbackErrorMessage = getAuthCallbackErrorMessage();
+  if (callbackErrorMessage) {
+    return {
+      data: null,
+      error: new Error(mapEmailAuthError(new Error(callbackErrorMessage), "verify"))
+    };
+  }
+
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession();
 
   if (error) {
     return {
@@ -252,7 +366,7 @@ export async function verifyVerificationCode({ email, verificationMethod, code }
   }
 
   return {
-    data,
+    data: buildVerificationProfile(session?.user),
     error: null
   };
 }

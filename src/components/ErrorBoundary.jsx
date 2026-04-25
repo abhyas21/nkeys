@@ -1,67 +1,36 @@
 import { Component } from "react";
-import { STORE_KEY } from "../lib/storage";
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, errorMessage: "" };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error) {
-    return {
-      hasError: true,
-      errorMessage: error instanceof Error ? error.message : "Unknown runtime error"
-    };
+    return { hasError: true, error };
   }
 
-  componentDidCatch(error, info) {
-    console.error("NKeys runtime error:", error, info);
+  componentDidCatch(error, errorInfo) {
+    console.error("React Error Boundary caught an error:", error, errorInfo);
   }
-
-  handleReset = () => {
-    window.localStorage.removeItem(STORE_KEY);
-    window.location.reload();
-  };
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-stone-50 px-4 py-10 text-ink sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl rounded-[2rem] border border-stone-200 bg-white p-8 shadow-soft">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
-              Runtime error
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold text-ink">
-              The app hit an error while loading
-            </h1>
-            <p className="mt-4 text-sm leading-7 text-stone-600">
-              This usually means saved browser data is corrupted or a runtime exception occurred.
-              Clearing the local demo data is the fastest recovery step.
-            </p>
-            <p className="mt-4 rounded-2xl bg-stone-50 px-4 py-3 text-sm text-stone-600">
-              Error: {this.state.errorMessage || "Unknown runtime error"}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={this.handleReset}
-                className="rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
-              >
-                Clear local data and reload
-              </button>
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900"
-              >
-                Reload only
-              </button>
-            </div>
+        <div className="flex min-h-screen items-center justify-center bg-stone-50 p-4 font-sans text-ink">
+          <div className="w-full max-w-md rounded-[2rem] border border-stone-200 bg-white p-8 text-center shadow-soft">
+            <h2 className="mb-2 text-2xl font-bold">Something went wrong</h2>
+            <p className="mb-6 text-sm leading-6 text-stone-600">{this.state.error?.message || "An unexpected React error occurred."}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
+            >
+              Reload Page
+            </button>
           </div>
         </div>
       );
     }
-
     return this.props.children;
   }
 }

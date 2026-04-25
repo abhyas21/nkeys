@@ -213,12 +213,12 @@ export default function CheckoutPage() {
 
   if (!cartItems.length) {
     return (
-      <section className="rounded-[2rem] border border-stone-200 bg-white p-6 text-center shadow-soft sm:p-10">
+      <section className="rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 text-center shadow-soft sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
           Checkout
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-ink">Your cart is empty</h1>
-        <p className="mt-3 text-sm leading-7 text-stone-600">
+        <h1 className="mt-3 text-3xl font-semibold text-ink dark:text-white">Your cart is empty</h1>
+        <p className="mt-3 text-sm leading-7 text-stone-600 dark:text-stone-400">
           Add products before moving through the shipping, payment, and review steps.
         </p>
         <Link
@@ -234,7 +234,7 @@ export default function CheckoutPage() {
   return (
     <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8">
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-6 lg:p-8"
+        className="page-reveal rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-soft sm:p-6 lg:p-8"
         style={{ "--delay": "40ms" }}
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -242,7 +242,7 @@ export default function CheckoutPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
               Checkout flow
             </p>
-            <h1 className="mt-2 text-3xl font-semibold text-ink sm:text-4xl">
+            <h1 className="mt-2 text-3xl font-semibold text-ink dark:text-white sm:text-4xl">
               Shipping, payment, then final review
             </h1>
           </div>
@@ -259,13 +259,12 @@ export default function CheckoutPage() {
             return (
               <div
                 key={step}
-                className={`rounded-3xl border px-5 py-4 ${
-                  active
+                className={`rounded-3xl border px-5 py-4 ${active
                     ? "border-stone-900 bg-stone-900 text-white"
                     : complete
                       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                       : "border-stone-200 bg-stone-50 text-stone-500"
-                }`}
+                  }`}
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.22em]">
                   Step {index + 1}
@@ -408,11 +407,10 @@ export default function CheckoutPage() {
                     key={option.value}
                     type="button"
                     onClick={() => setPayment((current) => ({ ...current, method: option.value }))}
-                    className={`rounded-3xl border p-5 text-left transition ${
-                      payment.method === option.value
+                    className={`rounded-3xl border p-5 text-left transition ${payment.method === option.value
                         ? "border-stone-900 bg-stone-900 text-white"
                         : "border-stone-200 bg-stone-50 text-stone-600"
-                    }`}
+                      }`}
                   >
                     <p className="text-lg font-semibold">{option.label}</p>
                     <p className="mt-2 text-sm leading-6 opacity-90">{option.copy}</p>
@@ -671,14 +669,14 @@ export default function CheckoutPage() {
       </section>
 
       <aside
-        className="page-reveal-right space-y-5 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-6 xl:sticky xl:top-28 xl:self-start"
+        className="page-reveal-right space-y-5 rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-soft sm:p-6 xl:sticky xl:top-28 xl:self-start"
         style={{ "--delay": "120ms" }}
       >
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
             Order summary
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
+          <h2 className="mt-2 text-2xl font-semibold text-ink dark:text-white sm:text-3xl">
             {cartItems.length} line items
           </h2>
         </div>
@@ -747,9 +745,8 @@ export default function CheckoutPage() {
             </div>
           ) : null}
           {couponFeedback ? (
-            <p className={`mt-4 rounded-2xl px-4 py-3 text-sm ${
-              hasTestCoupon ? "bg-emerald-50 text-emerald-700" : "bg-stone-50 text-stone-600"
-            }`}>
+            <p className={`mt-4 rounded-2xl px-4 py-3 text-sm ${hasTestCoupon ? "bg-emerald-50 text-emerald-700" : "bg-stone-50 text-stone-600"
+              }`}>
               {couponFeedback}
             </p>
           ) : null}

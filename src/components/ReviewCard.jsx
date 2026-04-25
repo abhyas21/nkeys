@@ -10,18 +10,18 @@ export default function ReviewCard({ review, onHelpful, hasVoted }) {
   const canVoteHelpful = typeof onHelpful === "function";
 
   return (
-    <article className="lift-card rounded-3xl border border-stone-200 bg-white p-5">
+    <article className="lift-card rounded-3xl border border-[#ddcdbc] dark:border-[#3a2d25] bg-[#fffaf3] dark:bg-[#211915] p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <RatingStars rating={review.rating} />
-            <h4 className="font-semibold text-ink">{review.title}</h4>
+            <h4 className="font-semibold text-ink dark:text-white">{review.title}</h4>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-stone-500">
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-stone-500 dark:text-stone-400">
             <span>{review.authorName}</span>
             <span>{createdAt}</span>
             {review.verifiedPurchase ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#e4efe7] px-3 py-1 text-[#3f6755] dark:bg-[#25352d] dark:text-[#a8c3b6]">
                 <BadgeCheck size={14} />
                 Verified Purchase
               </span>
@@ -34,23 +34,23 @@ export default function ReviewCard({ review, onHelpful, hasVoted }) {
             type="button"
             onClick={() => onHelpful(review.id)}
             disabled={hasVoted}
-            className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 transition duration-300 hover:-translate-y-0.5 hover:border-stone-900 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+            className="inline-flex items-center gap-2 rounded-full border border-[#ddcdbc] dark:border-[#3a2d25] px-4 py-2 text-sm font-semibold text-stone-700 dark:text-stone-300 transition duration-300 hover:-translate-y-0.5 hover:border-terracotta hover:text-terracotta dark:hover:border-[#7b5b48] disabled:cursor-not-allowed disabled:bg-[#f7ecde] disabled:text-stone-400"
           >
             <ChevronUp size={16} />
             Helpful ({review.helpfulCount || 0})
           </button>
         ) : (
-          <span className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-500">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#f7ecde] px-4 py-2 text-sm font-semibold text-stone-500 dark:bg-[#2a201a] dark:text-stone-400">
             Helpful ({review.helpfulCount || 0})
           </span>
         )}
       </div>
 
-      <p className="mt-4 text-sm leading-7 text-stone-600">{review.comment}</p>
+      <p className="mt-4 text-sm leading-7 text-stone-600 dark:text-stone-400">{review.comment}</p>
 
       {review.photos?.length ? (
         <div className="mt-4">
-          <div className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+          <div className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
             <ImageIcon size={14} />
             Customer photos
           </div>

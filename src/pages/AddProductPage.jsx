@@ -31,12 +31,12 @@ export default function AddProductPage() {
 
   if (!isOwner) {
     return (
-      <section className="rounded-[2rem] border border-stone-200 bg-white p-10 text-center shadow-soft">
+      <section className="rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-10 text-center shadow-soft">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
           Add product
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-ink">Owner access only</h1>
-        <p className="mt-3 text-sm leading-7 text-stone-600">
+        <h1 className="mt-3 text-3xl font-semibold text-ink dark:text-white">Owner access only</h1>
+        <p className="mt-3 text-sm leading-7 text-stone-600 dark:text-stone-400">
           Only the owner account ({ownerEmail}) can add products.
         </p>
       </section>
@@ -114,7 +114,7 @@ export default function AddProductPage() {
   return (
     <div className="grid gap-8 xl:grid-cols-[0.95fr_1.05fr]">
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-8 shadow-soft"
+        className="page-reveal rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-8 shadow-soft"
         style={{ "--delay": "40ms" }}
       >
         <div className="flex items-center justify-between gap-4">
@@ -122,13 +122,13 @@ export default function AddProductPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
               Add product
             </p>
-            <h1 className="mt-2 text-4xl font-semibold text-ink">
+            <h1 className="mt-2 text-4xl font-semibold text-ink dark:text-white">
               Create a new product listing
             </h1>
           </div>
           <Link
             to="/admin"
-            className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-ink transition hover:border-stone-900"
+            className="inline-flex items-center gap-2 rounded-full border border-stone-200 dark:border-stone-700 px-5 py-3 text-sm font-semibold text-ink dark:text-white transition hover:border-stone-900 dark:hover:border-stone-500"
           >
             <ArrowLeft size={16} />
             Back
@@ -269,13 +269,13 @@ export default function AddProductPage() {
       </section>
 
       <aside
-        className="page-reveal-right rounded-[2rem] border border-stone-200 bg-white p-8 shadow-soft"
+        className="page-reveal-right rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-8 shadow-soft"
         style={{ "--delay": "120ms" }}
       >
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
           Image preview
         </p>
-        <h2 className="mt-2 text-3xl font-semibold text-ink">
+        <h2 className="mt-2 text-3xl font-semibold text-ink dark:text-white">
           Product gallery
         </h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">

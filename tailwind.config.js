@@ -4,18 +4,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#141414",
-        sand: "#f4efe8",
-        terracotta: "#cc6a3d",
-        moss: "#3f6755",
-        gold: "#c8a15a"
+        ink: "#241812",
+        sand: "#ead8c4",
+        terracotta: "#c96d42",
+        moss: "#426451",
+        gold: "#c8964d"
       },
       boxShadow: {
-        soft: "0 22px 55px rgba(15, 23, 42, 0.08)"
+        soft: "0 24px 60px rgba(55, 33, 20, 0.12)"
       },
       backgroundImage: {
         "hero-grid":
-          "radial-gradient(circle at top right, rgba(204, 106, 61, 0.16), transparent 30%), radial-gradient(circle at bottom left, rgba(63, 103, 85, 0.12), transparent 32%)"
+          "radial-gradient(circle at top right, rgba(201, 109, 66, 0.18), transparent 30%), radial-gradient(circle at bottom left, rgba(66, 100, 81, 0.15), transparent 32%)"
       }
     }
   },

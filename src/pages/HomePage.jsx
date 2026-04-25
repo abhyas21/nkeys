@@ -11,17 +11,17 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       <section
-        className="page-reveal grid gap-6 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:gap-8 sm:p-8 lg:grid-cols-[1.02fr_0.98fr] lg:p-10"
+        className="page-reveal grid gap-6 rounded-[2rem] border border-[#ddcdbc] bg-[#fffaf3] p-5 shadow-soft dark:border-[#3a2d25] dark:bg-[#211915] sm:gap-8 sm:p-8 lg:grid-cols-[1.02fr_0.98fr] lg:p-10"
         style={{ "--delay": "40ms" }}
       >
         <div className="flex flex-col justify-center">
-          <span className="inline-flex w-fit items-center rounded-full bg-sand px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-stone-600">
+          <span className="inline-flex w-fit items-center rounded-full bg-sand px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#765f51] dark:text-[#d8c7b7]">
             New launch
           </span>
           <h1 className="mt-4 max-w-2xl text-3xl font-semibold text-ink sm:text-4xl lg:text-5xl">
             Explore all products
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-600 sm:text-base sm:leading-8">
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-600 dark:text-stone-400 sm:text-base sm:leading-8">
             Browse the full catalog in a clean product grid. Open any item to view its image
             carousel, price, description, and save it to your like list.
           </p>
@@ -29,21 +29,21 @@ export default function HomePage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               to="/products"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-terracotta px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#b75f38] sm:w-auto"
             >
               Browse catalog
               <ArrowRight size={16} />
             </Link>
             <Link
               to="/about"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#ddcdbc] px-6 py-3 text-sm font-semibold text-ink transition hover:border-terracotta hover:text-terracotta dark:border-[#3a2d25] dark:text-white sm:w-auto"
             >
               About
             </Link>
             {isOwner ? (
               <Link
                 to="/admin"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#ddcdbc] px-6 py-3 text-sm font-semibold text-ink transition hover:border-terracotta hover:text-terracotta dark:border-[#3a2d25] dark:text-white sm:w-auto"
               >
                 <BadgeCheck size={16} />
                 Admin dashboard
@@ -56,10 +56,10 @@ export default function HomePage() {
           <div className="launch-orb launch-orb-a" />
           <div className="launch-orb launch-orb-b" />
 
-          <article className="launch-card-3d rounded-[2rem] border border-stone-200 bg-stone-50 p-4 shadow-soft sm:p-5">
+          <article className="launch-card-3d rounded-[2rem] border border-[#ddcdbc] bg-[#f7ecde] p-4 shadow-soft dark:border-[#4a382e] dark:bg-[#2a201a] sm:p-5">
             {launchProduct ? (
               <>
-                <div className="overflow-hidden rounded-[1.6rem] bg-white">
+                <div className="overflow-hidden rounded-[1.6rem] bg-[#fffaf3] dark:bg-[#211915]">
                   <img
                     src={launchProduct.gallery[0]}
                     alt={launchProduct.name}
@@ -68,38 +68,38 @@ export default function HomePage() {
                 </div>
                 <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500 dark:text-stone-400">
                       New launch
                     </p>
                     <h2 className="mt-2 text-xl font-semibold text-ink sm:text-2xl">
                       {launchProduct.name}
                     </h2>
                   </div>
-                  <span className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-ink shadow-sm">
+                  <span className="rounded-full bg-[#fffaf3] px-3 py-2 text-sm font-semibold text-ink shadow-sm dark:bg-[#211915] dark:text-white">
                     {formatMoney(launchProduct.price)}
                   </span>
                 </div>
-                <p className="mt-3 text-sm leading-7 text-stone-600">
+                <p className="mt-3 text-sm leading-7 text-stone-600 dark:text-stone-400">
                   {launchProduct.shortDescription}
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2 text-xs text-stone-500">
-                  <span className="rounded-full bg-white px-3 py-2">
+                <div className="mt-4 flex flex-wrap gap-2 text-xs text-stone-500 dark:text-stone-400">
+                  <span className="rounded-full bg-[#fffaf3] px-3 py-2 dark:bg-[#211915]">
                     {categoriesById[launchProduct.categoryId]?.name}
                   </span>
-                  <span className="rounded-full bg-white px-3 py-2">
+                  <span className="rounded-full bg-[#fffaf3] px-3 py-2 dark:bg-[#211915]">
                     {launchProduct.gallery.length} photos
                   </span>
                 </div>
               </>
             ) : (
-              <div className="flex min-h-[25rem] flex-col justify-between rounded-[1.6rem] bg-[linear-gradient(145deg,#fff7ef,#f4ede3)] p-6">
+              <div className="flex min-h-[25rem] flex-col justify-between rounded-[1.6rem] bg-[linear-gradient(145deg,#fffaf3,#efe1cf)] p-6 dark:bg-[linear-gradient(145deg,#2b211c,#211915)]">
                 <div className="launch-placeholder-media rounded-[1.5rem]" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500 dark:text-stone-400">
                     New launch
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-ink">Fresh drop coming soon</h2>
-                  <p className="mt-3 text-sm leading-7 text-stone-600">
+                  <p className="mt-3 text-sm leading-7 text-stone-600 dark:text-stone-400">
                     Add your first product from the owner dashboard and it will appear here as the
                     highlighted launch card.
                   </p>
@@ -134,7 +134,7 @@ export default function HomePage() {
               );
             })
           ) : (
-            <div className="rounded-[2rem] border border-dashed border-stone-300 bg-stone-50 p-8 text-sm leading-7 text-stone-600 md:col-span-2 xl:col-span-4">
+            <div className="rounded-[2rem] border border-dashed border-[#d4bda8] bg-[#f7ecde] p-8 text-sm leading-7 text-stone-600 dark:border-[#4a382e] dark:bg-[#2a201a] dark:text-stone-400 md:col-span-2 xl:col-span-4">
               No products available yet. {isOwner
                 ? "Use the admin dashboard to add the first product."
                 : "Products will appear here as soon as the owner publishes them."}
@@ -144,16 +144,16 @@ export default function HomePage() {
       </section>
 
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-8"
+        className="page-reveal rounded-[2rem] border border-[#ddcdbc] bg-[#fffaf3] p-5 shadow-soft dark:border-[#3a2d25] dark:bg-[#211915] sm:p-8"
         style={{ "--delay": "180ms" }}
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500 dark:text-stone-400">
           About NKeys
         </p>
         <h2 className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">
           Made for customers who like clean browsing
         </h2>
-        <p className="mt-4 max-w-3xl text-sm leading-8 text-stone-600">
+        <p className="mt-4 max-w-3xl text-sm leading-8 text-stone-600 dark:text-stone-400">
           NKeys keeps the storefront simple: explore products, open details, save favorites, and
           browse launches without clutter.
         </p>

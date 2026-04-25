@@ -9,16 +9,16 @@ export default function ProductsPage() {
   return (
     <div className="space-y-8">
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-5 shadow-soft sm:p-8"
+        className="page-reveal rounded-[2rem] border border-[#ddcdbc] bg-[#fffaf3] p-5 shadow-soft dark:border-[#3a2d25] dark:bg-[#211915] sm:p-8"
         style={{ "--delay": "40ms" }}
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500 dark:text-stone-400">
           Product listing
         </p>
         <h1 className="mt-2 text-3xl font-semibold text-ink sm:text-4xl">
           All stickers and keychains
         </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-600">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-600 dark:text-stone-400">
           Browse every product in one clean grid. Open any item for the image carousel, price,
           description, and like button.
         </p>
@@ -41,7 +41,7 @@ export default function ProductsPage() {
               );
             })
           ) : (
-            <div className="rounded-[2rem] border border-dashed border-stone-300 bg-stone-50 p-8 text-sm leading-7 text-stone-600 sm:col-span-2 xl:col-span-3">
+            <div className="rounded-[2rem] border border-dashed border-[#d4bda8] bg-[#f7ecde] p-8 text-sm leading-7 text-stone-600 dark:border-[#4a382e] dark:bg-[#2a201a] dark:text-stone-400 sm:col-span-2 xl:col-span-3">
               <p className="font-semibold text-ink">No products added yet.</p>
               <p className="mt-2">
                 {isOwner
@@ -51,7 +51,7 @@ export default function ProductsPage() {
               {isOwner ? (
                 <Link
                   to="/admin"
-                  className="mt-4 inline-flex items-center rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
+                  className="mt-4 inline-flex items-center rounded-full bg-terracotta px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#b75f38]"
                 >
                   Open admin dashboard
                 </Link>

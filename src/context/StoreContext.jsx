@@ -450,7 +450,7 @@ export function StoreProvider({ children }) {
     });
   };
 
-  const signInCustomer = async ({ name, email, phone, verifiedBy }) => {
+  const signInCustomer = async ({ name, gender, email, phone, verifiedBy }) => {
     const normalizedName = String(name || "").trim();
     const normalizedEmail = normalizeEmail(email);
     const normalizedPhone = normalizePhone(phone);
@@ -468,6 +468,7 @@ export function StoreProvider({ children }) {
     let nextUser = {
       id: existingUser?.id || createId("user"),
       name: normalizedName,
+      gender: String(gender || "").trim(),
       email: normalizedEmail,
       phone: normalizedPhone,
       role: roleFromEmail(normalizedEmail)
@@ -491,6 +492,7 @@ export function StoreProvider({ children }) {
     const nextSession = {
       userId: nextUser.id,
       name: nextUser.name,
+      gender: nextUser.gender,
       email: nextUser.email,
       phone: nextUser.phone,
       role: nextUser.role,
