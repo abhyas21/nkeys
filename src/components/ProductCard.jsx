@@ -1,4 +1,4 @@
-import { ArrowRight, Heart } from "lucide-react";
+import { ArrowRight, Heart, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useStore } from "../context/StoreContext";
 import RatingStars from "./RatingStars";
@@ -10,8 +10,13 @@ export default function ProductCard({
   reviewCount = 0,
   formatMoney
 }) {
-  const { isLikedProduct, toggleLikedProduct } = useStore();
+  const { addToCart, isLikedProduct, toggleLikedProduct } = useStore();
   const liked = isLikedProduct(product.id);
+  const isOutOfStock = Number(product.inventory) <= 0;
+  const hasSalePrice = Number(product.compareAtPrice) > Number(product.price);
+  const discountPercent = hasSalePrice
+    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
+    : 0;
 
   return (
     <article className="product-depth-card group lift-card flex h-full flex-col overflow-hidden rounded-3xl border border-[#ddcdbc] bg-[#fffaf3] shadow-soft dark:border-[#3a2d25] dark:bg-[#211915]">
@@ -28,12 +33,24 @@ export default function ProductCard({
       </button>
 
       <Link to={`/products/${product.slug}`} className="block">
-        <div className="aspect-[4/4.3] overflow-hidden bg-[#f1e0cd] dark:bg-[#2a201a]">
+        <div className="relative aspect-[4/4.3] overflow-hidden bg-[#f1e0cd] dark:bg-[#2a201a]">
           <img
             src={product.gallery[0]}
             alt={product.name}
             className="motion-media h-full w-full object-cover"
           />
+          <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+            {product.featured ? (
+              <span className="rounded-full bg-terracotta px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-sm">
+                New
+              </span>
+            ) : null}
+            {hasSalePrice ? (
+              <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-sm">
+                {discountPercent}% off
+              </span>
+            ) : null}
+          </div>
         </div>
       </Link>
 
@@ -61,16 +78,35 @@ export default function ProductCard({
               <span className="text-xl font-semibold text-ink dark:text-white sm:text-2xl">
                 {formatMoney(product.price)}
               </span>
+              {hasSalePrice ? (
+                <span className="text-sm font-semibold text-stone-400 line-through">
+                  {formatMoney(product.compareAtPrice)}
+                </span>
+              ) : null}
             </div>
+            <p className={`mt-2 text-xs font-semibold ${isOutOfStock ? "text-rose-600" : "text-moss dark:text-emerald-300"}`}>
+              {isOutOfStock ? "Sold out" : `${product.inventory} in stock`}
+            </p>
           </div>
 
-          <Link
-            to={`/products/${product.slug}`}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#ddcdbc] px-4 py-2 text-sm font-semibold text-ink transition duration-300 hover:-translate-y-0.5 hover:border-terracotta hover:text-terracotta dark:border-[#3a2d25] dark:text-white dark:hover:border-[#7b5b48] sm:w-auto"
-          >
-            View
-            <ArrowRight size={16} className="transition duration-300 group-hover:translate-x-0.5" />
-          </Link>
+          <div className="flex w-full flex-col gap-2 sm:w-auto">
+            <button
+              type="button"
+              onClick={() => addToCart({ productId: product.id, quantity: 1 })}
+              disabled={isOutOfStock}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-300 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200 sm:w-auto"
+            >
+              <ShoppingBag size={16} />
+              Add
+            </button>
+            <Link
+              to={`/products/${product.slug}`}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#ddcdbc] px-4 py-2 text-sm font-semibold text-ink transition duration-300 hover:-translate-y-0.5 hover:border-terracotta hover:text-terracotta dark:border-[#3a2d25] dark:text-white dark:hover:border-[#7b5b48] sm:w-auto"
+            >
+              View
+              <ArrowRight size={16} className="transition duration-300 group-hover:translate-x-0.5" />
+            </Link>
+          </div>
         </div>
       </div>
     </article>

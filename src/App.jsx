@@ -1,80 +1,142 @@
-import { useEffect } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import Layout from "./components/Layout";
-import StartupAuth from "./components/StartupAuth";
-import { useStore } from "./context/StoreContext";
-import AddProductPage from "./pages/AddProductPage";
-import AdminPage from "./pages/AdminPage";
-import AboutPage from "./pages/AboutPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import HomePage from "./pages/HomePage";
-import LikesPage from "./pages/LikesPage";
+import { useEffect, Suspense, useState } from "react";
+import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+import { isAdminEmail } from "./lib/auth";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { Loader2 } from "lucide-react";
+
+// Layouts
+import CustomerLayout from "./layouts/CustomerLayout";
+import AdminLayout from "./layouts/AdminLayout";
+
+// Customer Pages
+import Home from "./pages/Home";
+import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
+import Wishlist from "./pages/Wishlist";
+import Checkout from "./pages/Checkout";
+import Profile from "./pages/Profile";
+import Cart from "./pages/Cart";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import FAQ from "./pages/FAQ";
+import NotFound from "./pages/NotFound";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
-import ProductPage from "./pages/ProductPage";
-import ProductsPage from "./pages/ProductsPage";
 
-function ScrollToTop() {
-  const location = useLocation();
+// Auth Pages
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, [location.pathname]);
+// Admin Pages
+import Dashboard from "./admin/Dashboard";
+import ProductsManager from "./admin/ProductsManager";
+import CategoriesManager from "./admin/CategoriesManager";
+import OrdersManager from "./admin/OrdersManager";
+import CustomersManager from "./admin/CustomersManager";
+import SettingsManager from "./admin/SettingsManager";
 
-  return null;
+function RouteFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[40vh] p-8 space-y-3">
+      <Loader2 className="animate-spin text-stone-600 dark:text-stone-400" size={28} />
+      <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">Loading view...</p>
+    </div>
+  );
 }
 
-export default function App() {
-  const { backendLabel, currentCustomer, isOwner, isStoreLoading } = useStore();
-  const landingPage = <HomePage />;
-  const checkoutPage = <CheckoutPage />;
-  const successPage = <OrderSuccessPage />;
-  const addProductPage = isOwner ? <AddProductPage /> : <Navigate to="/" replace />;
-  const verifyPage = currentCustomer ? <Navigate to="/" replace /> : <StartupAuth />;
+function CustomerRoute() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const [authTimedOut, setAuthTimedOut] = useState(false);
 
   useEffect(() => {
-    window.__NKEYS_APP_MOUNTED__?.();
+    const timer = setTimeout(() => setAuthTimedOut(true), 2000);
+    return () => clearTimeout(timer);
   }, []);
 
-  if (isStoreLoading) {
+  if (loading && !authTimedOut) {
     return (
-      <div className="min-h-screen bg-stone-50 px-4 py-8 text-ink sm:px-6 lg:px-8">
-        <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl items-center justify-center">
-          <section className="w-full rounded-[2rem] border border-stone-200 bg-white p-10 text-center shadow-soft">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
-              Syncing catalog
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold text-ink">Loading shared product data</h1>
-            <p className="mt-4 text-sm leading-7 text-stone-600">
-              NKeys is connecting to the {backendLabel.toLowerCase()} so the latest products and
-              customer records are visible in this account too.
-            </p>
-          </section>
-        </div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="animate-spin text-stone-600 dark:text-stone-300" size={28} />
+      </div>
+    );
+  }
+  return user ? <Outlet /> : <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+}
+
+function AdminRoute() {
+  const { user, isAdmin, loading } = useAuth();
+  const [authTimedOut, setAuthTimedOut] = useState(false);
+  const demoAdmin = import.meta.env.VITE_DEMO_ADMIN === "true";
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAuthTimedOut(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading && !authTimedOut) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="animate-spin text-stone-600 dark:text-stone-300" size={28} />
       </div>
     );
   }
 
+  const isAllowed = Boolean(user && isAdminEmail(user.email));
+  return isAllowed ? <Outlet /> : <Navigate to="/" replace />;
+}
+
+export default function App() {
+  useEffect(() => {
+    window.__NKEYS_APP_MOUNTED__?.();
+  }, []);
+
   return (
-    <>
-      <ScrollToTop />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route index element={landingPage} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/likes" element={<LikesPage />} />
-          <Route path="/verify" element={verifyPage} />
-          <Route path="/products" element={<ProductsPage />} />
-          <Route path="/products/:slug" element={<ProductPage />} />
-          <Route path="/checkout" element={checkoutPage} />
-          <Route path="/checkout/success/:orderId" element={successPage} />
-          <Route
-            path="/admin"
-            element={isOwner ? <AdminPage /> : <Navigate to={currentCustomer ? "/" : "/verify"} replace />}
-          />
-          <Route path="/admin/products/new" element={addProductPage} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </>
+    <ErrorBoundary>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          {/* Customer Routes */}
+          <Route element={<CustomerLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/shop" element={<Products />} />
+            <Route path="/products/:id" element={<ProductDetail />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+            
+            {/* Protected Customer Routes */}
+            <Route element={<CustomerRoute />}>
+              <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
+            </Route>
+          </Route>
+
+          {/* Admin Routes */}
+          <Route element={<AdminRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<Dashboard />} />
+              <Route path="/admin/products" element={<ProductsManager />} />
+              <Route path="/admin/categories" element={<CategoriesManager />} />
+              <Route path="/admin/orders" element={<OrdersManager />} />
+              <Route path="/admin/customers" element={<CustomersManager />} />
+              <Route path="/admin/settings" element={<SettingsManager />} />
+            </Route>
+          </Route>
+
+          {/* Catch-all redirect to 404 page */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }

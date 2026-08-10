@@ -15,6 +15,7 @@ import {
   isEmailVerificationEnabled,
   isPhoneVerificationEnabled,
   isVerificationMethodReady,
+  isActualVerificationConfigured,
   sendVerificationCode,
   verifyVerificationCode
 } from "../lib/liveVerification";
@@ -448,6 +449,23 @@ export default function StartupAuth() {
               <UserRound size={20} />
             </span>
           </div>
+
+          {!isActualVerificationConfigured(form.verificationMethod) ? (
+            <div className={`mt-5 flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${isMaleTheme
+              ? "border-[#d28a56]/30 bg-[#d28a56]/10 text-[#fff3e4]"
+              : isFemaleTheme
+                ? "border-[#f38cb5]/30 bg-[#f38cb5]/10 text-[#6a2645]"
+                : "border-amber-200 bg-amber-50/70 text-amber-800 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-300"
+              }`}>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+              </span>
+              <p className="leading-5">
+                <strong className="font-semibold">Sandbox Mode Active:</strong> External API keys are not configured. Click <strong>"Send code"</strong> and enter <strong>"123456"</strong> to enter the store instantly.
+              </p>
+            </div>
+          ) : null}
 
           <form className="mt-8 space-y-5" onSubmit={handleVerify}>
             <div className="grid gap-4 md:grid-cols-2">

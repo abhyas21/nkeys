@@ -1,0 +1,6 @@
+{
+  "appId": "com.nkeys.store",
+  "appName": "NKeys Store",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

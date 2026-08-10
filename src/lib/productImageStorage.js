@@ -13,8 +13,8 @@ export async function uploadProductImages(files) {
     return { urls: [], provider: "none", warning: "" };
   }
 
-  // Fallback to local Data URLs if Supabase is not set up
-  if (!isSupabaseConfigured || !supabase) {
+  // Keep local demo mode independent from Supabase storage policies.
+  if (import.meta.env.VITE_DEMO_ADMIN === "true" || !isSupabaseConfigured || !supabase) {
     const urls = await Promise.all(
       files.map((file) => {
         return new Promise((resolve, reject) => {
@@ -28,25 +28,25 @@ export async function uploadProductImages(files) {
     return { urls, provider: "local", warning: "Supabase not configured. Images saved locally." };
   }
 
-  // Upload to Supabase Storage
-  const urls = [];
-  for (const file of files) {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2, 10)}-${Date.now()}.${fileExt}`;
-    const filePath = `gallery/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from(SUPABASE_PRODUCT_IMAGE_BUCKET)
-      .upload(filePath, file);
-
-    if (error) throw error;
-
-    const { data } = supabase.storage
-      .from(SUPABASE_PRODUCT_IMAGE_BUCKET)
-      .getPublicUrl(filePath);
-
-    urls.push(data.publicUrl);
+  try {
+    const urls = [];
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 10)}-${Date.now()}.${fileExt}`;
+      const filePath = `gallery/${fileName}`;
+      const { error } = await supabase.storage.from(SUPABASE_PRODUCT_IMAGE_BUCKET).upload(filePath, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from(SUPABASE_PRODUCT_IMAGE_BUCKET).getPublicUrl(filePath);
+      urls.push(data.publicUrl);
+    }
+    return { urls, provider: "supabase", warning: "" };
+  } catch (error) {
+    const urls = await Promise.all(files.map((file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    })));
+    return { urls, provider: "local", warning: error?.message || "Supabase storage is unavailable." };
   }
-
-  return { urls, provider: "supabase", warning: "" };
 }

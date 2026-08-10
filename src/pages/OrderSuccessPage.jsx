@@ -1,26 +1,56 @@
-import { BadgeCheck, PackageCheck, ShoppingBag } from "lucide-react";
+import { BadgeCheck, PackageCheck, ShoppingBag, Loader2 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { useStore } from "../context/StoreContext";
+import { useState, useEffect } from "react";
+import { supabase } from "../services/supabase";
+import { useAuth } from "../context/AuthContext";
 
 export default function OrderSuccessPage() {
   const { orderId } = useParams();
-  const { orders, formatMoney, isOwner } = useStore();
+  const { isAdmin } = useAuth();
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const order = orders.find((item) => item.id === orderId) || null;
+  useEffect(() => {
+    if (orderId) {
+      setLoading(true);
+      supabase
+        .from("orders")
+        .select("*, order_items(*)")
+        .eq("id", orderId)
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Error fetching order:", error);
+          } else {
+            setOrder(data);
+          }
+          setLoading(false);
+        });
+    }
+  }, [orderId]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+        <Loader2 className="animate-spin text-stone-600 dark:text-stone-300" size={32} />
+        <p className="text-sm text-stone-500 font-semibold uppercase tracking-wider">Loading Order Confirmation...</p>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
-      <section className="rounded-[2rem] border border-stone-200 bg-white p-10 text-center shadow-soft">
+      <section className="rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-10 text-center shadow-soft">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
           Order success
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-ink">Order not found</h1>
-        <p className="mt-3 text-sm leading-7 text-stone-600">
-          The success page expects an order created in this local session.
+        <h1 className="mt-3 text-3xl font-semibold text-stone-900 dark:text-white">Order not found</h1>
+        <p className="mt-3 text-sm leading-7 text-stone-500">
+          We couldn't retrieve the confirmation for Order ID <span className="font-mono text-stone-900 dark:text-white font-bold">{orderId}</span>.
         </p>
         <Link
           to="/products"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-stone-950 text-white dark:bg-white dark:text-stone-950 px-6 py-3 text-sm font-semibold transition hover:bg-stone-850"
         >
           Return to catalog
         </Link>
@@ -31,146 +61,141 @@ export default function OrderSuccessPage() {
   const createdAt = new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "long",
-    year: "numeric"
-  }).format(new Date(order.createdAt));
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(order.created_at));
+
+  const formatMoney = (val) => `₹${Number(val).toLocaleString("en-IN")}`;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-5xl mx-auto">
       <section
-        className="page-reveal rounded-[2rem] border border-stone-200 bg-white p-5 text-center shadow-soft sm:p-8 lg:p-10"
-        style={{ "--delay": "40ms" }}
+        className="page-reveal rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 text-center shadow-soft sm:p-8 lg:p-10"
       >
-        <span className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+        <span className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white">
           <PackageCheck size={28} />
         </span>
         <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
           Order success
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-ink sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-semibold text-stone-900 dark:text-white sm:text-4xl">
           Order placed successfully
         </h1>
-        <p className="mt-4 text-base leading-8 text-stone-600">
-          Your NKeys order has been saved locally with number{" "}
-          <span className="font-semibold text-ink">{order.number}</span>.
+        <p className="mt-4 text-base leading-8 text-stone-600 dark:text-stone-400">
+          Your NKeys order has been saved with ID{" "}
+          <span className="font-mono font-bold text-stone-900 dark:text-white">{order.id}</span>.
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-3xl bg-sand p-5">
+          <div className="rounded-3xl bg-stone-50 dark:bg-stone-850 p-5 border border-stone-100 dark:border-stone-800">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
               Status
             </p>
-            <p className="mt-2 text-xl font-semibold text-ink">{order.status}</p>
+            <p className="mt-2 text-xl font-semibold text-stone-900 dark:text-white">{order.status}</p>
           </div>
-          <div className="rounded-3xl bg-sand p-5">
+          <div className="rounded-3xl bg-stone-50 dark:bg-stone-850 p-5 border border-stone-100 dark:border-stone-800">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
               Placed on
             </p>
-            <p className="mt-2 text-xl font-semibold text-ink">{createdAt}</p>
+            <p className="mt-2 text-xl font-semibold text-stone-900 dark:text-white">{createdAt}</p>
           </div>
-          <div className="rounded-3xl bg-sand p-5">
+          <div className="rounded-3xl bg-stone-50 dark:bg-stone-850 p-5 border border-stone-100 dark:border-stone-800">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
               Total
             </p>
-            <p className="mt-2 text-xl font-semibold text-ink">{formatMoney(order.total)}</p>
+            <p className="mt-2 text-xl font-semibold text-stone-900 dark:text-white">{formatMoney(order.total_amount)}</p>
           </div>
         </div>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
             to="/products"
-            className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700"
+            className="inline-flex items-center gap-2 rounded-full bg-stone-950 text-white dark:bg-white dark:text-stone-950 px-6 py-3 text-sm font-semibold transition hover:bg-stone-900"
           >
             <ShoppingBag size={16} />
             Continue shopping
           </Link>
-          {isOwner ? (
+          {isAdmin ? (
             <Link
-              to="/admin"
-              className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-6 py-3 text-sm font-semibold text-ink transition hover:border-stone-900"
+              to="/admin/orders"
+              className="inline-flex items-center gap-2 rounded-full border border-stone-200 dark:border-stone-800 px-6 py-3 text-sm font-semibold text-stone-900 dark:text-white hover:border-stone-900 dark:hover:border-white transition"
             >
               <BadgeCheck size={16} />
               View in admin
             </Link>
-          ) : null}
+          ) : (
+            <Link
+              to="/profile?tab=orders"
+              className="inline-flex items-center gap-2 rounded-full border border-stone-200 dark:border-stone-800 px-6 py-3 text-sm font-semibold text-stone-900 dark:text-white hover:border-stone-900 dark:hover:border-white transition"
+            >
+              <BadgeCheck size={16} />
+              Track order
+            </Link>
+          )}
         </div>
       </section>
 
       <section
         className="page-reveal grid gap-6 xl:grid-cols-[1.1fr_0.9fr]"
-        style={{ "--delay": "140ms" }}
       >
-        <article className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
+        <article className="rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
             Purchased items
           </p>
           <div className="mt-6 space-y-4">
-            {order.items.map((item) => (
+            {order.order_items?.map((item) => (
               <div
-                key={item.lineId}
-                className="flex items-center justify-between gap-4 rounded-3xl bg-stone-50 p-4"
+                key={item.id}
+                className="flex items-center justify-between gap-4 rounded-3xl bg-stone-50 dark:bg-stone-850 p-4 border border-stone-100 dark:border-stone-800"
               >
                 <div>
-                  <p className="font-semibold text-ink">{item.name}</p>
+                  <p className="font-semibold text-stone-900 dark:text-white">{item.product_name || "Keychain"}</p>
                   <p className="mt-1 text-sm text-stone-500">Qty {item.quantity}</p>
-                  {item.customizationFileName ? (
-                    <p className="mt-2 text-xs text-terracotta">
-                      Artwork: {item.customizationFileName}
-                    </p>
-                  ) : null}
                 </div>
-                <p className="text-lg font-semibold text-ink">{formatMoney(item.total)}</p>
+                <p className="text-lg font-semibold text-stone-900 dark:text-white">{formatMoney(item.price * item.quantity)}</p>
               </div>
             ))}
           </div>
         </article>
 
-        <article className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
+        <article className="rounded-[2rem] border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
             Delivery and payment
           </p>
           <div className="mt-6 space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-ink">Shipping</h2>
-              <p className="mt-3 text-sm leading-7 text-stone-600">
-                {order.shipping.fullName}
+              <h2 className="text-lg font-semibold text-stone-900 dark:text-white">Shipping Address</h2>
+              <p className="mt-3 text-sm leading-7 text-stone-600 dark:text-stone-400">
+                <strong className="text-stone-900 dark:text-white">{order.full_name}</strong>
                 <br />
-                {order.shipping.email}
+                Email: {order.user_email}
                 <br />
-                {order.shipping.phone}
+                Phone: {order.phone} {order.alt_phone ? `/ ${order.alt_phone}` : ""}
                 <br />
-                {order.shipping.address}
+                Address: {order.house_number ? `${order.house_number}, ` : ""}{order.street_1}, {order.street_2 ? `${order.street_2}, ` : ""}{order.city_village}, {order.district}, {order.state} - {order.postal_code}
               </p>
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-ink">Payment</h2>
-              <p className="mt-3 text-sm leading-7 text-stone-600">
-                {order.payment.method}
-                <br />
-                {order.payment.reference}
+              <h2 className="text-lg font-semibold text-stone-900 dark:text-white">Payment Method</h2>
+              <p className="mt-3 text-sm leading-7 text-stone-600 dark:text-stone-400">
+                Cash on Delivery (COD)
               </p>
             </div>
 
-            <div className="rounded-3xl bg-sand p-4">
+            <div className="rounded-3xl bg-stone-50 dark:bg-stone-850 p-4 border border-stone-100 dark:border-stone-800">
               <div className="flex items-center justify-between text-sm text-stone-500">
                 <span>Subtotal</span>
-                <span>{formatMoney(order.subtotal ?? order.total)}</span>
+                <span>{formatMoney(order.subtotal)}</span>
               </div>
               <div className="mt-2 flex items-center justify-between text-sm text-stone-500">
-                <span>Delivery</span>
-                <span>{formatMoney(order.shippingAmount ?? 0)}</span>
+                <span>Delivery Charge</span>
+                <span>{formatMoney(order.delivery_charge || 60)}</span>
               </div>
-              {order.discountAmount ? (
-                <div className="mt-2 flex items-center justify-between text-sm text-emerald-700">
-                  <span>
-                    Discount{order.couponCode ? ` (${order.couponCode})` : ""}
-                  </span>
-                  <span>-{formatMoney(order.discountAmount)}</span>
-                </div>
-              ) : null}
-              <div className="mt-3 flex items-center justify-between border-t border-stone-200 pt-3">
-                <span className="font-semibold text-ink">Total</span>
-                <span className="text-lg font-semibold text-ink">{formatMoney(order.total)}</span>
+              <div className="mt-3 flex items-center justify-between border-t border-stone-200 dark:border-stone-800 pt-3">
+                <span className="font-semibold text-stone-900 dark:text-white">Total</span>
+                <span className="text-lg font-semibold text-stone-900 dark:text-white">{formatMoney(order.total_amount)}</span>
               </div>
             </div>
           </div>

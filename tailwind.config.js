@@ -4,11 +4,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#241812",
-        sand: "#ead8c4",
-        terracotta: "#c96d42",
-        moss: "#426451",
-        gold: "#c8964d"
+        ink: "var(--color-ink)",
+        sand: "var(--color-sand)",
+        terracotta: "var(--color-terracotta)",
+        moss: "var(--color-moss)",
+        gold: "var(--color-gold)"
       },
       boxShadow: {
         soft: "0 24px 60px rgba(55, 33, 20, 0.12)"

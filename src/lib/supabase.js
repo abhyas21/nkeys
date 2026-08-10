@@ -3,6 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn(
+    "Warning: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is undefined. " +
+    "Supabase integration will be disabled, falling back to local demo storage."
+  );
+}
+
 function createResumableUploadUrl(urlValue) {
   if (!urlValue) {
     return "";
@@ -40,4 +47,12 @@ export const supabase = isSupabaseConfigured
 
 export function getDataBackendLabel() {
   return isSupabaseConfigured ? "Supabase shared backend" : "Local demo storage";
+}
+
+export function getStoragePublicUrl(fileName) {
+  if (!fileName) return "";
+  if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
+    return fileName;
+  }
+  return `${supabaseUrl}/storage/v1/object/public/${SUPABASE_PRODUCT_IMAGE_BUCKET}/${fileName}`;
 }
