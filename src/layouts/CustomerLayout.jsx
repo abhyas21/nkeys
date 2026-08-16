@@ -43,8 +43,9 @@ export default function CustomerLayout() {
       {/* Top Header Navigation Bar */}
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-b border-stone-200 dark:border-stone-850">
         <div className="max-w-[1800px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 h-16 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl text-stone-950 dark:text-stone-50 shrink-0">
-            <span>NKeys Store</span>
+          <Link to="/" className="flex items-center gap-3 font-bold text-xl text-stone-950 dark:text-stone-50 shrink-0 group">
+            <img src="/logo.png" alt="NKeys Logo" className="w-10 h-10 object-contain rounded-full border border-amber-500/20 shadow-sm group-hover:scale-105 transition-transform" />
+            <span className="font-serif tracking-tight text-lg md:text-xl">NKeys Store</span>
           </Link>
           
           <form onSubmit={handleNavSearchSubmit} className="hidden md:flex relative max-w-xs w-full">

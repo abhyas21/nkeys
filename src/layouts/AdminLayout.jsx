@@ -16,7 +16,10 @@ export default function AdminLayout() {
     <div className="min-h-screen bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col md:flex-row">
       <aside className="w-full md:w-64 bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-stone-200 dark:border-stone-800 justify-between">
-          <span className="font-bold text-lg text-stone-950 dark:text-stone-50">NKeys Admin</span>
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="NKeys Logo" className="w-8 h-8 object-contain rounded-full border border-amber-500/20" />
+            <span className="font-serif font-bold text-base text-stone-950 dark:text-stone-50">NKeys Admin</span>
+          </div>
           <Link to="/" className="text-stone-500 hover:text-stone-700 md:hidden flex items-center gap-1">
             <ArrowLeft size={16} />
             <span>Store</span>
