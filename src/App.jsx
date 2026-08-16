@@ -89,6 +89,13 @@ function AdminRoute() {
 
 export default function App() {
   useEffect(() => {
+    try {
+      localStorage.removeItem("nkeys-demo-products");
+      localStorage.removeItem("nkeys-products");
+      localStorage.removeItem("nkeys-react-store-v1");
+    } catch (e) {
+      console.warn("Storage cleanup notice:", e);
+    }
     window.__NKEYS_APP_MOUNTED__?.();
   }, []);
 

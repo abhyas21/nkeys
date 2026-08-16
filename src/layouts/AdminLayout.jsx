@@ -5,12 +5,11 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import { LayoutDashboard, Tag, Package, ShoppingCart, Users, LogOut, ArrowLeft, Settings } from "lucide-react";
 
 export default function AdminLayout() {
-  const { profile } = useAuth();
+  const { profile, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await signOut();
-    window.location.href = "/";
+    await logout();
   };
 
   return (

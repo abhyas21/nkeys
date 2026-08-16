@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { signIn, getProfile } from "../services/auth";
 import { isAdminEmail } from "../lib/auth";
 import { supabase } from "../services/supabase";
+import { useAuth } from "../context/AuthContext";
 
 const withTimeout = (request, message = "Verification is taking too long. Check your internet connection and try again.") =>
   Promise.race([
@@ -11,6 +12,7 @@ const withTimeout = (request, message = "Verification is taking too long. Check 
   ]);
 
 export default function Login() {
+  const { loginUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,7 +48,12 @@ export default function Login() {
     setError("");
 
     try {
-      const { user } = await withTimeout(signIn({ email, password }), "Login timed out. Check your internet connection and try again.");
+      const res = await signIn({ email, password });
+      const user = res?.user;
+
+      if (!user) {
+        throw new Error("Unable to log in. Please check your credentials.");
+      }
       
       let profile = null;
       try {
@@ -54,6 +61,8 @@ export default function Login() {
       } catch (err) {
         console.warn("Profile fetch failed, defaulting to customer role:", err);
       }
+
+      loginUser(user, profile);
       
       if (redirectTarget) {
         navigate(redirectTarget);

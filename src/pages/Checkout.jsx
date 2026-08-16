@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
 import { supabase } from "../services/supabase";
+import { createOrder } from "../services/database";
 import { MapPin, CreditCard, ShoppingBag, ArrowRight, ArrowLeft, Loader2, ClipboardCheck } from "lucide-react";
 
 export default function Checkout() {
@@ -87,57 +88,40 @@ export default function Checkout() {
     setError("");
 
     try {
-      // 1. Insert order record into database
-      const { data: newOrder, error: orderErr } = await supabase
-        .from("orders")
-        .insert([{
-          id: `order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          user_id: user.id,
-          user_email: user.email,
-          full_name: fullName,
-          phone: primaryPhone,
-          alt_phone: secondaryPhone || null,
-          state,
-          district,
-          city_village: cityVillage,
-          postal_code: postalCode,
-          street_1: street1,
-          street_2: street2 || null,
-          house_number: houseNumber,
-          subtotal: cartTotal,
-          delivery_charge: 60,
-          total_amount: cartTotal + 60,
-          status: "Pending",
-          payment_method: paymentMethod === "cod" ? "COD" : "Card",
-          payment_status: "Pending"
-        }])
-        .select()
-        .single();
+      const orderPayload = {
+        user_id: user?.id || null,
+        customer_email: (user?.email || "customer@example.com").toLowerCase().trim(),
+        user_email: (user?.email || "customer@example.com").toLowerCase().trim(),
+        full_name: fullName,
+        phone: primaryPhone,
+        alt_phone: secondaryPhone || null,
+        state,
+        district,
+        city_village: cityVillage,
+        postal_code: postalCode,
+        street_1: street1,
+        street_2: street2 || null,
+        house_number: houseNumber,
+        subtotal: cartTotal,
+        delivery_charge: 60,
+        total_amount: cartTotal + 60,
+        payment_method: "Manual / Pending Contact (8074445067)",
+        status: "Pending"
+      };
 
-      if (orderErr) throw orderErr;
-
-      // 2. Insert order items into database
       const itemsToInsert = cartItems.map((item) => ({
-        id: `order-item-${Date.now()}-${item.product_id}`,
-        order_id: newOrder.id,
         product_id: item.product_id,
-        product_name: item.products?.name || "Keychain Item",
-        price: item.products?.discount_price || item.products?.price || 0,
-        quantity: item.quantity
+        product_name: item.products?.name || item.name || "Keychain Item",
+        price: Number(item.products?.discount_price || item.products?.price || item.price || 0),
+        quantity: Number(item.quantity || 1)
       }));
 
-      const { error: itemsErr } = await supabase
-        .from("order_items")
-        .insert(itemsToInsert);
+      const newOrder = await createOrder(orderPayload, itemsToInsert);
 
-      if (itemsErr) throw itemsErr;
-
-      // 3. Clear the shopping cart
+      // Clear cart and display success
       await clearCart();
-
+      window.dispatchEvent(new Event('orders-updated'));
       addToast("Order placed successfully!");
-
-      // 4. Redirect to order success page
       navigate(`/order-success/${newOrder.id}`);
     } catch (err) {
       console.error("Order submission failed:", err);
@@ -317,66 +301,18 @@ export default function Checkout() {
           {step === 2 && (
             <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 rounded-3xl space-y-6 shadow-soft">
               <h3 className="font-extrabold text-sm uppercase tracking-wider flex items-center gap-2">
-                <CreditCard size={16} /> Select Payment Method
+                <CreditCard size={16} /> Payment Information
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <label className={`flex items-start gap-3 p-4 border rounded-2xl cursor-pointer transition ${paymentMethod === "cod" ? "border-stone-950 bg-stone-50 dark:bg-stone-800 dark:border-white" : "border-stone-200 dark:border-stone-800"}`}>
-                  <input type="radio" checked={paymentMethod === "cod"} onChange={() => setPaymentMethod("cod")} className="mt-0.5 accent-stone-950" />
-                  <div className="text-xs">
-                    <p className="font-bold">Cash on Delivery (COD)</p>
-                    <p className="text-stone-400 mt-1">Pay with cash upon arrival</p>
-                  </div>
-                </label>
-
-                <label className={`flex items-start gap-3 p-4 border rounded-2xl cursor-pointer transition ${paymentMethod === "card" ? "border-stone-950 bg-stone-50 dark:bg-stone-800 dark:border-white" : "border-stone-200 dark:border-stone-800"}`}>
-                  <input type="radio" checked={paymentMethod === "card"} onChange={() => setPaymentMethod("card")} className="mt-0.5 accent-stone-950" />
-                  <div className="text-xs">
-                    <p className="font-bold">Debit / Credit Card</p>
-                    <p className="text-stone-400 mt-1">Pay instantly online</p>
-                  </div>
-                </label>
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl my-4 text-center">
+                <p className="text-amber-900 font-semibold text-base">
+                  Online Payment Integration Coming Soon!
+                </p>
+                <p className="text-amber-800 text-sm mt-1">
+                  After clicking <strong>Place Order</strong>, your order will be submitted directly. 
+                  Please message us on WhatsApp/Phone at <strong className="underline font-bold">8074445067</strong> or wait for our team to contact you to confirm payment and delivery details.
+                </p>
               </div>
-
-              {paymentMethod === "card" && (
-                <div className="space-y-4 max-w-md animate-fade-in">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1">Card Number</label>
-                    <input
-                      type="text"
-                      maxLength={19}
-                      value={cardNo}
-                      onChange={(e) => setCardNo(formatCardNo(e.target.value))}
-                      placeholder="0000 0000 0000 0000"
-                      className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-xs outline-none dark:border-stone-800 dark:bg-stone-850 dark:text-stone-100"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1">Expiry Date</label>
-                      <input
-                        type="text"
-                        maxLength={5}
-                        value={cardExpiry}
-                        onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                        placeholder="MM/YY"
-                        className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-xs outline-none dark:border-stone-800 dark:bg-stone-855 dark:text-stone-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1">CVV</label>
-                      <input
-                        type="password"
-                        maxLength={3}
-                        value={cardCvv}
-                        onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ""))}
-                        placeholder="•••"
-                        className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-xs outline-none dark:border-stone-800 dark:bg-stone-855 dark:text-stone-100"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className="flex gap-3">
                 <button
@@ -387,9 +323,9 @@ export default function Checkout() {
                 </button>
                 <button
                   onClick={handleNextStep}
-                  className="flex-1 bg-stone-950 hover:bg-stone-900 text-white dark:bg-white dark:text-stone-950 py-3 rounded-full text-xs font-bold transition flex items-center justify-center gap-2"
+                  className="flex-1 bg-[#1A1918] hover:bg-[#33302C] text-white dark:bg-white dark:text-stone-950 py-3 rounded-full text-xs font-bold transition flex items-center justify-center gap-2"
                 >
-                  Continue <ArrowRight size={14} />
+                  Review Order <ArrowRight size={14} />
                 </button>
               </div>
             </div>

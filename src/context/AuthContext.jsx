@@ -116,19 +116,36 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  const loginUser = (userData, profileData = null) => {
+    const userObj = userData || null;
+    setUser(userObj);
+    if (userObj) {
+      setProfile(
+        profileData || {
+          id: userObj.id,
+          email: userObj.email,
+          name: userObj.user_metadata?.name || userObj.email?.split("@")[0] || "User",
+          role: isAdminEmail(userObj.email) ? "admin" : "customer"
+        }
+      );
+    } else {
+      setProfile(null);
+    }
+  };
+
   const logout = async () => {
+    setUser(null);
+    setProfile(null);
     try {
       await supabase.auth.signOut();
     } catch (err) {
-      console.error("Sign out error:", err);
+      console.warn("Sign out error:", err);
     }
     try {
       localStorage.clear();
     } catch (e) {
       console.error("localStorage clear error:", e);
     }
-    setUser(null);
-    setProfile(null);
     window.location.href = "/login";
   };
 
@@ -136,6 +153,7 @@ export function AuthProvider({ children }) {
     user,
     profile,
     loading,
+    loginUser,
     logout,
     isAdmin: Boolean(user && isAdminEmail(user.email)),
     isCustomer: Boolean(user && !isAdminEmail(user.email))

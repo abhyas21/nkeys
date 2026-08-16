@@ -1,18 +1,25 @@
 import { supabase } from "./supabase";
 import { isAdminEmail } from "../lib/auth";
 
+const fetchWithTimeout = (promise, ms = 2500) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms))
+  ]);
+
 export async function signUp({ email, password, name, phone, role = "customer" }) {
   try {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name, phone, role }
-      }
-    });
-    if (!error && data?.user) return data;
+    const res = await fetchWithTimeout(
+      supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { data: { name, phone, role } }
+      }),
+      3000
+    );
+    if (!res?.error && res?.data?.user) return res.data;
   } catch (err) {
-    console.warn("Supabase signUp error:", err);
+    console.warn("Supabase signUp error/timeout:", err);
   }
 
   const demoUser = {
@@ -25,33 +32,35 @@ export async function signUp({ email, password, name, phone, role = "customer" }
 }
 
 export async function signIn({ email, password }) {
-  // 1. Try standard Supabase authentication
+  const cleanEmail = (email || "").trim();
+
+  // 1. Try standard Supabase authentication with 2.5s timeout
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    if (!error && data?.user) return data;
+    const res = await fetchWithTimeout(
+      supabase.auth.signInWithPassword({ email: cleanEmail, password }),
+      2500
+    );
+    if (!res?.error && res?.data?.user) return res.data;
   } catch (err) {
-    console.warn("Supabase signInWithPassword failed, attempting signup fallback:", err);
+    console.warn("Supabase signInWithPassword fast check failed:", err);
   }
 
   // 2. Try auto signup if account was not created in Supabase Auth table
   try {
-    const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-      email,
-      password
-    });
-    if (!signUpErr && signUpData?.user) return signUpData;
+    const res = await fetchWithTimeout(
+      supabase.auth.signUp({ email: cleanEmail, password }),
+      2500
+    );
+    if (!res?.error && res?.data?.user) return res.data;
   } catch (err) {
-    console.warn("Supabase signUp fallback failed:", err);
+    console.warn("Supabase signUp fallback fast check failed:", err);
   }
 
   // 3. Fallback demo session so login ALWAYS succeeds cleanly for testing
   const demoUser = {
     id: `user-${Date.now()}`,
-    email: email.trim(),
-    user_metadata: { name: email.split("@")[0] }
+    email: cleanEmail,
+    user_metadata: { name: cleanEmail.split("@")[0] }
   };
   localStorage.setItem("nkeys-demo-user", JSON.stringify(demoUser));
   return { user: demoUser };
@@ -106,15 +115,13 @@ export async function updatePassword(newPassword) {
 
 export async function getProfile(userId) {
   try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    if (!error && data) return data;
+    const res = await fetchWithTimeout(
+      supabase.from("profiles").select("*").eq("id", userId).single(),
+      1500
+    );
+    if (!res?.error && res?.data) return res.data;
   } catch (err) {
-    console.warn("Supabase getProfile error:", err);
+    console.warn("Supabase getProfile error/timeout:", err);
   }
   return null;
 }

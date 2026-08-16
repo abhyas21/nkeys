@@ -1,7 +1,7 @@
 import { BadgeCheck, PackageCheck, ShoppingBag, Loader2 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { supabase } from "../services/supabase";
+import { getOrderById } from "../services/database";
 import { useAuth } from "../context/AuthContext";
 
 export default function OrderSuccessPage() {
@@ -13,17 +13,16 @@ export default function OrderSuccessPage() {
   useEffect(() => {
     if (orderId) {
       setLoading(true);
-      supabase
-        .from("orders")
-        .select("*, order_items(*)")
-        .eq("id", orderId)
-        .single()
-        .then(({ data, error }) => {
-          if (error) {
-            console.error("Error fetching order:", error);
-          } else {
+      getOrderById(orderId)
+        .then((data) => {
+          if (data) {
             setOrder(data);
           }
+        })
+        .catch((err) => {
+          console.error("Error fetching order confirmation:", err);
+        })
+        .finally(() => {
           setLoading(false);
         });
     }

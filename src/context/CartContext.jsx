@@ -8,6 +8,12 @@ export function CartProvider({ children }) {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
+  const triggerToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 2500);
+  };
 
   const readGuestCart = () => {
     try { return JSON.parse(localStorage.getItem("nkeys-guest-cart") || "[]"); } catch { return []; }
@@ -32,38 +38,56 @@ export function CartProvider({ children }) {
     }
   }, [user]);
 
-  const handleAdd = async (productId, quantity = 1) => {
+  const handleAdd = async (productOrId, quantity = 1) => {
+    let productObj = typeof productOrId === "object" && productOrId !== null ? productOrId : null;
+    const targetId = String(productObj?.id || productOrId);
+
+    if (!productObj) {
+      const allProducts = await getProducts();
+      productObj = allProducts.find((item) => String(item.id) === targetId);
+    }
+    if (!productObj) return;
+
     if (!user) {
-      const products = await getProducts();
-      const product = products.find((item) => item.id === productId);
-      if (!product) return;
       setCartItems((current) => {
-        const existing = current.find((item) => item.product_id === productId);
+        const existing = current.find((item) => String(item.product_id || item.products?.id) === targetId);
         const updated = existing
-          ? current.map((item) => item.product_id === productId ? { ...item, quantity: item.quantity + quantity } : item)
-          : [...current, { id: `guest-${Date.now()}-${productId}`, product_id: productId, quantity, products: product }];
+          ? current.map((item) => (String(item.product_id || item.products?.id) === targetId ? { ...item, quantity: item.quantity + quantity } : item))
+          : [...current, { id: `guest-${Date.now()}-${targetId}`, product_id: targetId, quantity, products: productObj }];
         localStorage.setItem("nkeys-guest-cart", JSON.stringify(updated));
         return updated;
       });
+      triggerToast(`${productObj.name || "Item"} added to bag!`);
       return;
     }
+
     try {
-      const existing = cartItems.find((item) => item.product_id === productId);
+      const existing = cartItems.find((item) => String(item.product_id || item.products?.id) === targetId);
       const newQty = existing ? existing.quantity + quantity : quantity;
-      const cartId = existing?.id || `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      await addToCart({ id: cartId, user_id: user.id, product_id: productId, quantity: newQty });
-      
+      const cartId = existing?.id || `cart-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      await addToCart({ id: cartId, user_id: user.id, product_id: targetId, quantity: newQty });
       const updated = await getCart(user.id);
       setCartItems(updated);
+      triggerToast(`${productObj.name || "Item"} added to bag!`);
     } catch (err) {
       console.error("Error adding to cart:", err);
+      setCartItems((current) => {
+        const existing = current.find((item) => String(item.product_id || item.products?.id) === targetId);
+        const updated = existing
+          ? current.map((item) => (String(item.product_id || item.products?.id) === targetId ? { ...item, quantity: item.quantity + quantity } : item))
+          : [...current, { id: `local-${Date.now()}-${targetId}`, product_id: targetId, quantity, products: productObj }];
+        return updated;
+      });
+      triggerToast(`${productObj.name || "Item"} added to bag!`);
     }
   };
 
   const handleUpdateQuantity = async (cartItemId, quantity) => {
+    const targetCartId = String(cartItemId);
     if (!user) {
       setCartItems((prev) => {
-        const updated = quantity <= 0 ? prev.filter((item) => item.id !== cartItemId) : prev.map((item) => item.id === cartItemId ? { ...item, quantity } : item);
+        const updated = quantity <= 0 ? prev.filter((item) => String(item.id) !== targetCartId) : prev.map((item) => (String(item.id) === targetCartId ? { ...item, quantity } : item));
         localStorage.setItem("nkeys-guest-cart", JSON.stringify(updated));
         return updated;
       });
@@ -71,12 +95,12 @@ export function CartProvider({ children }) {
     }
     try {
       if (quantity <= 0) {
-        await handleRemove(cartItemId);
+        await handleRemove(targetCartId);
         return;
       }
-      await updateCartQuantity(cartItemId, quantity);
+      await updateCartQuantity(targetCartId, quantity);
       setCartItems((prev) =>
-        prev.map((item) => (item.id === cartItemId ? { ...item, quantity } : item))
+        prev.map((item) => (String(item.id) === targetCartId ? { ...item, quantity } : item))
       );
     } catch (err) {
       console.error("Error updating cart quantity:", err);
@@ -84,17 +108,18 @@ export function CartProvider({ children }) {
   };
 
   const handleRemove = async (cartItemId) => {
+    const targetCartId = String(cartItemId);
     if (!user) {
       setCartItems((prev) => {
-        const updated = prev.filter((item) => item.id !== cartItemId);
+        const updated = prev.filter((item) => String(item.id) !== targetCartId);
         localStorage.setItem("nkeys-guest-cart", JSON.stringify(updated));
         return updated;
       });
       return;
     }
     try {
-      await removeFromCart(cartItemId);
-      setCartItems((prev) => prev.filter((item) => item.id !== cartItemId));
+      await removeFromCart(targetCartId);
+      setCartItems((prev) => prev.filter((item) => String(item.id) !== targetCartId));
     } catch (err) {
       console.error("Error removing from cart:", err);
     }
@@ -131,7 +156,17 @@ export function CartProvider({ children }) {
     clearCart: handleClear
   };
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+      {toastMessage && (
+        <div className="fixed bottom-20 right-6 z-50 bg-stone-900 text-white dark:bg-white dark:text-stone-900 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-bold animate-slide-in">
+          <span>✓</span>
+          <span>{toastMessage}</span>
+        </div>
+      )}
+    </CartContext.Provider>
+  );
 }
 
 export function useCart() {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { supabase } from "../services/supabase";
 import { getProducts, getProductImages, toggleWishlist, getWishlist, getProductImageUrl } from "../services/database";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -8,9 +9,15 @@ import { Heart, ShoppingBag, ArrowLeft, Tag, Truck, ShieldCheck, Star, MessageSq
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { addItem } = useCart();
   const { addToast } = useToast();
+  const navigate = useNavigate();
+
+  const handleBuyNow = () => {
+    addItem(product.id, quantity);
+    navigate("/checkout");
+  };
   
   const [product, setProduct] = useState(null);
   const [images, setImages] = useState([]);
@@ -37,17 +44,49 @@ export default function ProductDetail() {
   useEffect(() => {
     async function loadProductData() {
       try {
-        const prodData = await getProducts();
-        const found = prodData.find((p) => p.id === id);
+        setLoading(true);
+        let found = null;
+        const searchId = String(id || "").trim();
+
+        // 1. Try direct Supabase query using id, slug, or name
+        try {
+          const { data, error } = await supabase
+            .from("products")
+            .select("*, categories(*), product_images(*)")
+            .or(`id.eq.${searchId},slug.eq.${searchId},name.ilike.${searchId}`);
+
+          if (!error && data && data.length > 0) {
+            found = data[0];
+          }
+        } catch (e) {
+          console.warn("Supabase ProductDetail query notice:", e);
+        }
+
+        // 2. Fallback to getProducts() or local state
+        if (!found) {
+          const prodData = await getProducts();
+          found = prodData.find(
+            (p) =>
+              String(p.id) === searchId ||
+              p.slug === searchId ||
+              p.name?.toLowerCase() === searchId.toLowerCase() ||
+              p.slug?.toLowerCase() === searchId.toLowerCase()
+          );
+        }
+
         if (found) {
           setProduct(found);
-          setActiveImage(found.image_url);
-          const gallery = await getProductImages(found.id);
-          setImages(gallery);
+          setActiveImage(found.image_url || found.image || "/hero-keychain.svg");
+          try {
+            const gallery = await getProductImages(found.id);
+            setImages(gallery || []);
+          } catch {
+            setImages([]);
+          }
 
           if (user) {
             const wish = await getWishlist(user.id);
-            setIsWish(wish.some((w) => w.product_id === found.id));
+            setIsWish(wish.some((w) => String(w.product_id) === String(found.id)));
           }
         }
       } catch (err) {
@@ -134,36 +173,47 @@ export default function ProductDetail() {
               className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
             />
           </div>
-          {images.length > 0 && (
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              <button
-                onClick={() => setActiveImage(product.image_url)}
-                className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition shrink-0 ${
-                  activeImage === product.image_url ? "border-stone-950 dark:border-white" : "border-transparent"
-                }`}
-              >
-                <img src={getProductImageUrl(product.image_url)} alt="" className="w-full h-full object-cover" />
-              </button>
-              {images.map((img) => (
-                <button
-                  key={img.id}
-                  onClick={() => setActiveImage(img.image_url)}
-                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition shrink-0 ${
-                    activeImage === img.image_url ? "border-stone-955 dark:border-white" : "border-transparent"
-                  }`}
-                >
-                  <img src={getProductImageUrl(img.image_url)} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Thumbnail Gallery Row (Up to 5 thumbnails) */}
+          {(() => {
+            const galleryList = Array.from(
+              new Set(
+                [
+                  product?.image_url,
+                  product?.image,
+                  ...(Array.isArray(product?.images) ? product.images : []),
+                  ...(Array.isArray(product?.gallery) ? product.gallery : []),
+                  ...(images || []).map((img) => (typeof img === "string" ? img : img.image_url))
+                ].filter(Boolean)
+              )
+            ).slice(0, 5);
+
+            if (galleryList.length <= 1) return null;
+
+            return (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {galleryList.map((imgUrl, idx) => (
+                  <button
+                    key={`${imgUrl}-${idx}`}
+                    onClick={() => setActiveImage(imgUrl)}
+                    className={`w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${
+                      activeImage === imgUrl
+                        ? "border-[#B08D57] scale-105 shadow-md"
+                        : "border-stone-200 dark:border-stone-800 opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    <img src={getProductImageUrl(imgUrl)} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Product Configs / Buy Path */}
         <div className="flex flex-col justify-between space-y-6 lg:col-span-6 xl:col-span-7">
           <div className="space-y-4">
             <span className="text-xs text-stone-500 font-bold uppercase tracking-wider flex items-center gap-1">
-              <Tag size={12} /> {product.categories?.name}
+              <Tag size={12} /> {product.categories?.name || "General"}
             </span>
             <h1 className="text-2xl md:text-3xl font-extrabold text-stone-900 dark:text-stone-50">{product.name}</h1>
             
@@ -221,57 +271,58 @@ export default function ProductDetail() {
 
           {/* Pricing Summary / Actions */}
           <div className="space-y-4 border-t border-stone-200 dark:border-stone-800 pt-6">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-stone-600 dark:text-stone-400">Warehouse availability</span>
-              <span className="text-xs font-bold uppercase tracking-wider">
-                {isOutOfStock ? "Out of Stock" : `Delhi: ${product.stock_d || 0} | Kolkata: ${product.stock_k || 0}`}
-              </span>
-            </div>
 
             {!isOutOfStock && (
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-stone-600 dark:text-stone-400">Quantity</span>
-                <div className="flex items-center gap-3 border border-stone-200 dark:border-stone-700 rounded-full px-3 py-1">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="font-bold text-sm">-</button>
-                  <span className="font-bold text-sm">{quantity}</span>
-                  <button onClick={() => setQuantity(Math.min((product.stock_d || 0) + (product.stock_k || 0), quantity + 1))} className="font-bold text-sm">+</button>
+                <div className="flex items-center gap-3 border border-stone-200 dark:border-stone-700 rounded-full px-4 py-1.5">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="font-bold text-sm text-stone-600 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white">-</button>
+                  <span className="font-bold text-sm text-stone-900 dark:text-stone-100">{quantity}</span>
+                  <button onClick={() => setQuantity(Math.min((product.stock_d || 0) + (product.stock_k || 0), quantity + 1))} className="font-bold text-sm text-stone-600 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white">+</button>
                 </div>
               </div>
             )}
 
-            <div className="flex gap-3">
-              {user ? (
+            <div className="pt-2">
+              {!user ? (
                 <button
-                  onClick={() => {
-                    addItem(product.id, quantity);
-                    addToast(`Added ${quantity} ${product.name} to cart!`);
-                  }}
-                  disabled={isOutOfStock}
-                  className="flex-1 bg-stone-950 hover:bg-stone-900 text-white dark:bg-white dark:text-stone-950 font-bold py-3 rounded-full flex items-center justify-center gap-2 transition disabled:bg-stone-300 text-xs"
-                >
-                  <ShoppingBag size={14} />
-                  <span>Add to Bag</span>
-                </button>
-              ) : (
-                <Link
-                  to="/login"
-                  className="flex-1 bg-stone-955 hover:bg-stone-900 text-white font-bold py-3 rounded-full text-center transition text-xs"
+                  onClick={() => navigate("/login")}
+                  className="w-full py-3.5 bg-[#1A1918] text-white dark:bg-white dark:text-stone-950 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-[#33302C] dark:hover:bg-stone-200 transition-colors shadow-soft"
                 >
                   Login to Buy
-                </Link>
-              )}
-              
-              {user && (
-                <button
-                  onClick={handleWishlist}
-                  className={`p-3 rounded-full border transition ${
-                    isWish
-                      ? "border-stone-950 bg-stone-100 text-stone-950 dark:border-white dark:bg-stone-850 dark:text-white"
-                      : "border-stone-200 text-stone-400 hover:text-stone-950 dark:hover:text-stone-100"
-                  }`}
-                >
-                  <Heart size={18} className={isWish ? "fill-current" : ""} />
                 </button>
+              ) : (
+                <div className="flex gap-3 w-full items-center">
+                  <button
+                    onClick={() => {
+                      addItem(product.id, quantity);
+                      addToast(`Added ${quantity} ${product.name} to cart!`);
+                    }}
+                    disabled={isOutOfStock}
+                    className="flex-1 py-3.5 bg-[#1A1918] text-white dark:bg-white dark:text-stone-950 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-[#33302C] dark:hover:bg-stone-200 transition-colors flex items-center justify-center gap-2 shadow-soft disabled:opacity-50"
+                  >
+                    <ShoppingBag size={14} />
+                    <span>Add to Cart</span>
+                  </button>
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={isOutOfStock}
+                    className="flex-1 py-3.5 bg-[#B08D57] text-white rounded-full font-bold text-xs uppercase tracking-wider hover:bg-[#987643] transition-colors flex items-center justify-center gap-2 shadow-[0_10px_25px_rgba(176,141,87,0.3)] disabled:opacity-50"
+                  >
+                    <span>Buy Now</span>
+                  </button>
+                  <button
+                    onClick={handleWishlist}
+                    className={`p-3.5 rounded-full border transition ${
+                      isWish
+                        ? "border-[#B08D57] bg-[#B08D57]/10 text-[#B08D57]"
+                        : "border-stone-200 text-stone-400 hover:text-stone-950 dark:hover:text-stone-100"
+                    }`}
+                    title="Add to Wishlist"
+                  >
+                    <Heart size={18} className={isWish ? "fill-current" : ""} />
+                  </button>
+                </div>
               )}
             </div>
           </div>

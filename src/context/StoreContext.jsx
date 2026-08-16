@@ -22,18 +22,8 @@ const upsertById = (records, nextRecord) => {
     ? records.map((record) => (record.id === nextRecord.id ? nextRecord : record))
     : [nextRecord, ...records];
 };
-const mergeProductsKeepingLocalOnly = (remoteProducts, currentProducts) => {
-  const localOnlyProducts = Array.isArray(currentProducts)
-    ? currentProducts.filter((product) => product?.syncState === "local-only")
-    : [];
-
-  if (!localOnlyProducts.length) {
-    return remoteProducts;
-  }
-
-  return localOnlyProducts.reduce((mergedProducts, product) => upsertById(mergedProducts, product), [
-    ...remoteProducts
-  ]);
+const mergeProductsKeepingLocalOnly = (remoteProducts) => {
+  return remoteProducts || [];
 };
 
 const slugify = (value) => String(value || "")
@@ -76,7 +66,20 @@ const createFallbackGallery = (name, subtitle, accent) => {
 };
 
 export function StoreProvider({ children }) {
-  const [store, setStore] = useState(readStore);
+  useEffect(() => {
+    try {
+      localStorage.removeItem("nkeys-demo-products");
+      localStorage.removeItem("nkeys-products");
+      localStorage.removeItem("nkeys-react-store-v1");
+    } catch (e) {
+      console.warn("Storage cleanup notice:", e);
+    }
+  }, []);
+
+  const [store, setStore] = useState(() => {
+    const initial = readStore();
+    return { ...initial, products: [] };
+  });
   const [cartOpen, setCartOpen] = useState(false);
   const [cartFlyAnimation, setCartFlyAnimation] = useState(null);
   const [cartPulseKey, setCartPulseKey] = useState(0);
@@ -119,7 +122,7 @@ export function StoreProvider({ children }) {
         setStore((current) => ({
           ...current,
           users: snapshot.users,
-          products: mergeProductsKeepingLocalOnly(snapshot.products, current.products)
+          products: snapshot.products || []
         }));
         setSyncStatusMessage("");
       } catch (error) {

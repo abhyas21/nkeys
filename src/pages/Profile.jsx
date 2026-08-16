@@ -3,10 +3,11 @@ import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../services/supabase";
 import { updatePassword, signOut } from "../services/auth";
+import { getUserOrders } from "../services/database";
 import { ShoppingBag, MapPin, Settings, ShieldCheck, ChevronRight, Truck, Loader2, AlertCircle, LogOut } from "lucide-react";
 
 export default function Profile() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, logout } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const activeTab = searchParams.get("tab") || "orders";
@@ -47,16 +48,8 @@ export default function Profile() {
       setError("");
 
       try {
-        // Fetch user orders directly using email mapping
-        const { data: ordData, error: ordErr } = await supabase
-          .from("orders")
-          .select("*, order_items(*)")
-          .eq("user_email", user.email)
-          .order("created_at", { ascending: false });
-
-        if (ordErr) {
-          console.warn("Orders fetch issue:", ordErr);
-        } else if (isMounted) {
+        const ordData = await getUserOrders(user);
+        if (isMounted) {
           setOrders(ordData || []);
         }
       } catch (err) {
@@ -69,19 +62,38 @@ export default function Profile() {
       }
     }
 
+    const refreshCustomerOrders = async () => {
+      if (user && isMounted) {
+        const data = await getUserOrders(user);
+        if (isMounted) setOrders(data || []);
+      }
+    };
+
     if (!authLoading) {
       loadUserData();
     }
 
+    window.addEventListener("orders-updated", refreshCustomerOrders);
+    window.addEventListener("focus", refreshCustomerOrders);
+
+    const channel = supabase
+      .channel("customer-realtime-orders")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        refreshCustomerOrders();
+      })
+      .subscribe();
+
     return () => {
       isMounted = false;
       clearTimeout(safetyTimer);
+      window.removeEventListener("orders-updated", refreshCustomerOrders);
+      window.removeEventListener("focus", refreshCustomerOrders);
+      supabase.removeChannel(channel);
     };
   }, [user, authLoading]);
 
   const handleLogout = async () => {
-    await signOut();
-    window.location.href = "/";
+    await logout();
   };
 
   const handleTabChange = (tabName) => {

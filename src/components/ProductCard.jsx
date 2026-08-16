@@ -2,6 +2,7 @@ import { ArrowRight, Heart, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useStore } from "../context/StoreContext";
 import RatingStars from "./RatingStars";
+import { getProductImageUrl } from "../services/database";
 
 export default function ProductCard({
   product,
@@ -19,7 +20,7 @@ export default function ProductCard({
     : 0;
 
   return (
-    <article className="product-depth-card group lift-card flex h-full flex-col overflow-hidden rounded-3xl border border-[#ddcdbc] bg-[#fffaf3] shadow-soft dark:border-[#3a2d25] dark:bg-[#211915]">
+    <article className="product-depth-card group lift-card flex h-full w-full flex-col overflow-hidden rounded-3xl border border-[#ddcdbc] bg-[#fffaf3] shadow-soft dark:border-[#3a2d25] dark:bg-[#211915]">
       <button
         type="button"
         onClick={() => toggleLikedProduct(product.id)}
@@ -35,9 +36,13 @@ export default function ProductCard({
       <Link to={`/products/${product.slug}`} className="block">
         <div className="relative aspect-[4/4.3] overflow-hidden bg-[#f1e0cd] dark:bg-[#2a201a]">
           <img
-            src={product.gallery[0]}
+            src={getProductImageUrl(product.image_url || product.image || product.gallery?.[0])}
             alt={product.name}
             className="motion-media h-full w-full object-cover"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "/hero-keychain.svg";
+            }}
           />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
             {product.featured ? (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../services/supabase";
+import { getOrders, updateOrderStatus } from "../services/database";
 import { Mail, Phone, Calendar, Search, Loader2, Eye, X, CheckSquare } from "lucide-react";
 
 export default function OrdersManager() {
@@ -17,12 +18,7 @@ export default function OrdersManager() {
 
   const loadOrders = async () => {
     try {
-      const { data, error: fetchErr } = await supabase
-        .from("orders")
-        .select("*, order_items(*)")
-        .order("created_at", { ascending: false });
-
-      if (fetchErr) throw fetchErr;
+      const data = await getOrders();
       setOrders(data || []);
     } catch (err) {
       console.error("Error loading admin orders:", err);
@@ -34,6 +30,11 @@ export default function OrdersManager() {
 
   useEffect(() => {
     loadOrders();
+
+    const handleSync = () => {
+      loadOrders();
+    };
+    window.addEventListener("orders-updated", handleSync);
 
     // Listen for realtime database modifications
     const channel = supabase
@@ -48,33 +49,41 @@ export default function OrdersManager() {
       .subscribe();
 
     return () => {
+      window.removeEventListener("orders-updated", handleSync);
       supabase.removeChannel(channel);
     };
   }, []);
 
   const handleStatusChange = async (orderId, newStatus) => {
+    const statusUpper = String(newStatus).toUpperCase();
     setMsg("");
     setError("");
+
+    // 1. Optimistically update local array state so the select element immediately reflects the choice
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId ? { ...o, status: statusUpper, order_status: statusUpper } : o
+      )
+    );
+
+    if (selectedOrder && selectedOrder.id === orderId) {
+      setSelectedOrder((prev) => ({ ...prev, status: statusUpper, order_status: statusUpper }));
+    }
+
     try {
-      const { error: updateErr } = await supabase
-        .from("orders")
-        .update({ status: newStatus })
-        .eq("id", orderId);
+      // 2. Persist to database
+      await updateOrderStatus(orderId, statusUpper);
+      setMsg(`Order status updated to ${statusUpper}.`);
 
-      if (updateErr) throw updateErr;
-
-      setMsg(`Order status updated to ${newStatus}.`);
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-      );
-      
-      // Update selected order modal state if open
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder((prev) => ({ ...prev, status: newStatus }));
-      }
+      // 3. Dispatch event for other tabs/components
+      window.dispatchEvent(new CustomEvent("orders-updated", { detail: { orderId, status: statusUpper } }));
     } catch (err) {
-      console.error(err);
-      setError("Failed to update order status.");
+      console.error("[STATUS UPDATE ERROR]:", err);
+      setError(`Failed to update status: ${err.message || "Database error"}`);
+
+      // Revert on failure
+      const fresh = await getOrders();
+      setOrders(fresh);
     }
   };
 
@@ -83,25 +92,28 @@ export default function OrdersManager() {
       ord.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ord.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ord.user_email?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-    const matchesStatus = statusFilter === "all" || ord.status === statusFilter;
-    
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      String(ord.status || "").toUpperCase() === String(statusFilter).toUpperCase();
+
     return matchesSearch && matchesStatus;
   });
 
   const getStatusClass = (status) => {
-    switch (status) {
-      case "Pending":
+    const s = String(status || "").toUpperCase();
+    switch (s) {
+      case "PENDING":
         return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-450 dark:border-amber-900";
-      case "Confirmed":
+      case "CONFIRMED":
         return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-450 dark:border-blue-900";
-      case "Packed":
+      case "PACKED":
         return "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/20 dark:text-purple-450 dark:border-purple-900";
-      case "Shipped":
+      case "SHIPPED":
         return "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/20 dark:text-indigo-450 dark:border-indigo-900";
-      case "Delivered":
+      case "DELIVERED":
         return "bg-stone-900 text-white border-stone-900 dark:bg-white dark:text-stone-950 dark:border-white";
-      case "Cancelled":
+      case "CANCELLED":
         return "bg-stone-100 text-stone-400 line-through border-stone-200 dark:bg-stone-850 dark:text-stone-500 dark:border-stone-800";
       default:
         return "bg-stone-100 text-stone-600 border-stone-200 dark:bg-stone-850 dark:text-stone-400";
@@ -156,12 +168,12 @@ export default function OrdersManager() {
             className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-xs text-stone-900 dark:border-stone-800 dark:bg-stone-855 dark:text-stone-100 outline-none appearance-none pr-8 bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22m6 9 6 6 6-6%22/></svg>')] bg-no-repeat bg-[position:right_1rem_center]"
           >
             <option value="all">All Statuses</option>
-            <option value="Pending">Pending</option>
-            <option value="Confirmed">Confirmed</option>
-            <option value="Packed">Packed</option>
-            <option value="Shipped">Shipped</option>
-            <option value="Delivered">Delivered</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="PENDING">PENDING</option>
+            <option value="CONFIRMED">CONFIRMED</option>
+            <option value="PACKED">PACKED</option>
+            <option value="SHIPPED">SHIPPED</option>
+            <option value="DELIVERED">DELIVERED</option>
+            <option value="CANCELLED">CANCELLED</option>
           </select>
         </div>
       </div>
@@ -205,27 +217,38 @@ export default function OrdersManager() {
                     <td className="p-4">
                       <div className="flex items-center justify-center">
                         <select
-                          value={ord.status}
+                          value={(ord.status || ord.order_status || "PENDING").toUpperCase()}
                           onChange={(e) => handleStatusChange(ord.id, e.target.value)}
-                          className={`rounded-full border px-3 py-1.5 font-bold uppercase tracking-wider text-[10px] outline-none transition cursor-pointer ${getStatusClass(ord.status)}`}
+                          className={`rounded-full border px-3 py-1.5 font-bold uppercase tracking-wider text-[10px] outline-none transition cursor-pointer ${getStatusClass(ord.status || ord.order_status)}`}
                         >
-                          <option value="Pending">Pending</option>
-                          <option value="Confirmed">Confirmed</option>
-                          <option value="Packed">Packed</option>
-                          <option value="Shipped">Shipped</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Cancelled">Cancelled</option>
+                          <option value="PENDING">PENDING</option>
+                          <option value="CONFIRMED">CONFIRMED</option>
+                          <option value="PACKED">PACKED</option>
+                          <option value="SHIPPED">SHIPPED</option>
+                          <option value="DELIVERED">DELIVERED</option>
+                          <option value="CANCELLED">CANCELLED</option>
                         </select>
                       </div>
                     </td>
                     <td className="p-4 pr-6 text-center">
-                      <button
-                        onClick={() => setSelectedOrder(ord)}
-                        className="p-2 rounded-full border border-stone-200 dark:border-stone-800 hover:border-stone-400 text-stone-500 hover:text-stone-950 dark:hover:text-white transition"
-                        title="View order details"
-                      >
-                        <Eye size={14} />
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        {String(ord.status || "").toUpperCase() !== "DELIVERED" && (
+                          <button
+                            onClick={() => handleStatusChange(ord.id, "DELIVERED")}
+                            className="px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450 hover:bg-emerald-100 transition text-[10px] font-bold flex items-center gap-1"
+                            title="Mark as Delivered"
+                          >
+                            <CheckSquare size={12} /> Delivered
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedOrder(ord)}
+                          className="p-2 rounded-full border border-stone-200 dark:border-stone-800 hover:border-stone-400 text-stone-500 hover:text-stone-950 dark:hover:text-white transition"
+                          title="View order details"
+                        >
+                          <Eye size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -251,16 +274,16 @@ export default function OrdersManager() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-stone-800 gap-2">
                   <select
-                    value={ord.status}
+                    value={ord.status?.toUpperCase() || "PENDING"}
                     onChange={(e) => handleStatusChange(ord.id, e.target.value)}
                     className={`rounded-full border px-3 py-1 font-bold uppercase tracking-wider text-[10px] outline-none transition ${getStatusClass(ord.status)}`}
                   >
-                    <option value="Pending">Pending</option>
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Packed">Packed</option>
-                    <option value="Shipped">Shipped</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="CONFIRMED">CONFIRMED</option>
+                    <option value="PACKED">PACKED</option>
+                    <option value="SHIPPED">SHIPPED</option>
+                    <option value="DELIVERED">DELIVERED</option>
+                    <option value="CANCELLED">CANCELLED</option>
                   </select>
 
                   <button
@@ -300,16 +323,16 @@ export default function OrdersManager() {
               <div className="bg-stone-50 dark:bg-stone-850 p-4 rounded-2xl flex items-center justify-between border border-stone-150 dark:border-stone-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-stone-500">Fulfilment Control</span>
                 <select
-                  value={selectedOrder.status}
+                  value={selectedOrder.status?.toUpperCase() || "PENDING"}
                   onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)}
                   className={`rounded-full border px-3 py-1.5 font-bold uppercase tracking-wider text-[10px] outline-none transition cursor-pointer ${getStatusClass(selectedOrder.status)}`}
                 >
-                  <option value="Pending">Pending</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Packed">Packed</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Cancelled">Cancelled</option>
+                  <option value="PENDING">PENDING</option>
+                  <option value="CONFIRMED">CONFIRMED</option>
+                  <option value="PACKED">PACKED</option>
+                  <option value="SHIPPED">SHIPPED</option>
+                  <option value="DELIVERED">DELIVERED</option>
+                  <option value="CANCELLED">CANCELLED</option>
                 </select>
               </div>
 

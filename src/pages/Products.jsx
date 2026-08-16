@@ -56,6 +56,12 @@ export default function Products() {
       }
     }
     loadData();
+
+    const handleSync = () => {
+      loadData();
+    };
+    window.addEventListener("products-updated", handleSync);
+    return () => window.removeEventListener("products-updated", handleSync);
   }, [user]);
 
   // Wrap transition to keep VITE performance high
@@ -90,12 +96,17 @@ export default function Products() {
         prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (prod.description && prod.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesCategory = selectedCategory === "all" || prod.category_id === selectedCategory;
+      const matchesCategory =
+        selectedCategory === "all" ||
+        selectedCategory === "" ||
+        !selectedCategory ||
+        prod.category_id === selectedCategory ||
+        prod.categories?.id === selectedCategory;
       
-      const price = prod.discount_price || prod.price;
-      const matchesPrice = price <= priceLimit;
+      const price = Number(prod.discount_price || prod.price || 0);
+      const matchesPrice = priceLimit >= 1000 || price <= priceLimit;
 
-      const rating = prod.rating || 4.5; // fallback
+      const rating = prod.rating || 4.5;
       const matchesRating = rating >= minRating;
 
       return matchesSearch && matchesCategory && matchesPrice && matchesRating;
@@ -257,14 +268,14 @@ export default function Products() {
         )}
 
         {/* Grid/List Items */}
-        <section className={`lg:col-span-${showFilters ? "3" : "4"}`}>
+        <section className={showFilters ? "lg:col-span-3 w-full" : "lg:col-span-4 w-full"}>
           {filteredAndSortedProducts.length > 0 ? (
             <div className={
               viewMode === "grid"
                 ? showFilters
-                  ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-6"
-                  : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8 gap-6"
-                : "space-y-4"
+                  ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full"
+                  : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full"
+                : "space-y-4 w-full"
             }>
               {filteredAndSortedProducts.map((prod) => {
                 const isWish = wishlistIds.has(prod.id);
@@ -274,7 +285,7 @@ export default function Products() {
                   return (
                     <div
                       key={prod.id}
-                      className="group relative bg-white/40 dark:bg-stone-900/40 backdrop-blur-sm border border-stone-200 dark:border-stone-850 rounded-3xl overflow-hidden flex flex-col hover:shadow-soft transition"
+                      className="group relative bg-white/40 dark:bg-stone-900/40 backdrop-blur-sm border border-stone-200 dark:border-stone-850 rounded-3xl overflow-hidden flex flex-col hover:shadow-soft transition w-full"
                     >
                       <div className="relative aspect-square overflow-hidden bg-stone-100 dark:bg-stone-850">
                         <img
