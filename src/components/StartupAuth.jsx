@@ -431,7 +431,7 @@ export default function StartupAuth() {
       ) : null}
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-3xl items-center justify-center">
         <section
-          className={`page-reveal-right w-full rounded-[2rem] border p-8 shadow-soft lg:p-10 ${panelClassName}`}
+          className={`page-reveal-right w-full rounded-[2rem] border p-8 shadow-soft lg:p-10 overflow-y-auto max-h-[90vh] ${panelClassName}`}
           style={panelStyle}
         >
           <div className="flex items-start justify-between gap-4">
