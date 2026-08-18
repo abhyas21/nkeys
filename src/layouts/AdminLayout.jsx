@@ -51,6 +51,16 @@ export default function AdminLayout() {
             <Settings size={18} />
             <span>Settings</span>
           </Link>
+
+          <div className="pt-2">
+            <Link
+              to="/"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-stone-950 text-white dark:bg-white dark:text-stone-950 font-bold text-sm hover:bg-stone-800 transition shadow-sm"
+            >
+              <ArrowLeft size={18} />
+              <span>← Return to Store</span>
+            </Link>
+          </div>
         </nav>
 
         <div className="p-4 border-t border-stone-200 dark:border-stone-800">

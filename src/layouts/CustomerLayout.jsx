@@ -78,6 +78,16 @@ export default function CustomerLayout() {
           </nav>
 
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1A1918] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#33302C] transition shadow-sm"
+              >
+                <LayoutDashboard size={14} />
+                <span>Admin Dashboard</span>
+              </Link>
+            )}
+
             {user ? (
               <button
                 onClick={handleLogout}
@@ -134,6 +144,12 @@ export default function CustomerLayout() {
           )}
           <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">Bag ({cartCount})</span>
         </button>
+        {isAdmin && (
+          <Link to="/admin" className="flex flex-col items-center justify-center text-[#B08D57] font-bold transition">
+            <LayoutDashboard size={18} />
+            <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">Admin</span>
+          </Link>
+        )}
         {user ? (
           <Link to="/profile" className="flex flex-col items-center justify-center text-stone-600 hover:text-[#B08D57] transition">
             <User size={18} />
