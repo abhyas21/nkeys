@@ -10,11 +10,6 @@
     --color-sand: #FAF8F5;
     --color-gold: #B08D57;
   }
-  .dark {
-    --color-ink: #F5F3EF;
-    --color-sand: #121110;
-    --color-gold: #D4AF37;
-  }
 }
 
 html {
@@ -27,11 +22,6 @@ body {
   background-color: #FAF8F5;
   color: #1A1918;
   transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.dark body {
-  background-color: #121110;
-  color: #F5F3EF;
 }
 
 h1, h2, h3, .font-display, .font-serif-header {

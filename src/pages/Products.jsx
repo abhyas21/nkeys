@@ -280,27 +280,33 @@ export default function Products() {
               {filteredAndSortedProducts.map((prod) => {
                 const isWish = wishlistIds.has(prod.id);
                 const isOutOfStock = ((prod.stock_d || 0) + (prod.stock_k || 0)) <= 0;
+                const productUrl = `/products/${prod.id}`;
                 
                 if (viewMode === "grid") {
                   return (
-                    <div
+                    <Link
                       key={prod.id}
-                      className="group relative bg-white/40 dark:bg-stone-900/40 backdrop-blur-sm border border-stone-200 dark:border-stone-850 rounded-3xl overflow-hidden flex flex-col hover:shadow-soft transition w-full"
+                      to={productUrl}
+                      className="group relative bg-white border border-stone-200 rounded-3xl overflow-hidden flex flex-col hover:shadow-luxury transition duration-300 w-full"
                     >
-                      <div className="relative aspect-square overflow-hidden bg-stone-100 dark:bg-stone-850">
+                      <div className="relative aspect-square overflow-hidden bg-stone-100">
                         <img
                           src={getProductImageUrl(prod.image_url)}
                           alt={prod.name}
-                          className="w-full h-full object-cover group-hover:scale-102 transition duration-300 cursor-pointer"
-                          onClick={() => setSelectedPreviewProduct(prod)}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />
                         {user && (
                           <button
-                            onClick={() => handleWishlist(prod.id)}
-                            className={`absolute top-4 right-4 p-2 rounded-full border bg-white dark:bg-stone-900 shadow-sm transition ${
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleWishlist(prod.id);
+                            }}
+                            className={`absolute top-4 right-4 p-2 rounded-full border bg-white/90 shadow-sm transition ${
                               isWish
-                                ? "border-stone-950 text-stone-950 dark:border-stone-100 dark:text-stone-100"
-                                : "border-stone-200 dark:border-stone-800 text-stone-400 hover:text-stone-950 dark:hover:text-stone-100"
+                                ? "border-stone-955 text-stone-955"
+                                : "border-stone-200 text-stone-400 hover:text-stone-955"
                             }`}
                           >
                             <Heart size={18} className={isWish ? "fill-current" : ""} />
@@ -310,16 +316,16 @@ export default function Products() {
 
                       <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                         <div>
-                          <span className="text-xs text-stone-500 font-semibold uppercase tracking-wider flex items-center gap-1">
-                            <Tag size={12} /> {prod.categories?.name}
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#B08D57] flex items-center gap-1">
+                            <Tag size={12} /> {prod.categories?.name || "General"}
                           </span>
-                          <h3 className="font-bold text-base mt-1 cursor-pointer hover:underline" onClick={() => setSelectedPreviewProduct(prod)}>{prod.name}</h3>
+                          <h3 className="font-serif font-bold text-base mt-1 text-[#1A1918] group-hover:text-[#B08D57] transition-colors">{prod.name}</h3>
                           <p className="text-xs text-stone-500 mt-1 line-clamp-2">{prod.description}</p>
                         </div>
 
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between pt-2 border-t border-stone-100">
                           <div className="flex items-baseline gap-2">
-                            <span className="text-lg font-bold text-stone-950 dark:text-stone-50">
+                            <span className="text-lg font-extrabold text-stone-950">
                               ₹{prod.discount_price || prod.price}
                             </span>
                             {prod.discount_price && (
@@ -327,88 +333,78 @@ export default function Products() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setSelectedPreviewProduct(prod)}
-                              className="p-2 rounded-full border border-stone-200 hover:border-stone-400 dark:border-stone-700 text-stone-500 hover:text-stone-950"
-                              title="Quick View"
-                            >
-                              <Eye size={16} />
-                            </button>
-                            {user && (
-                              <button
-                                onClick={() => {
-                                  addItem(prod.id, 1);
-                                  addToast(`Added ${prod.name} to cart!`);
-                                }}
-                                disabled={isOutOfStock}
-                                className="bg-stone-950 hover:bg-stone-850 text-white dark:bg-white dark:text-stone-950 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 disabled:bg-stone-300 transition"
-                              >
-                                <ShoppingBag size={12} />
-                                {isOutOfStock ? "Sold Out" : "Add"}
-                              </button>
-                            )}
-                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              addItem(prod.id, 1);
+                              addToast(`Added ${prod.name} to cart!`);
+                            }}
+                            disabled={isOutOfStock}
+                            className="bg-[#1A1918] hover:bg-[#33302C] text-white px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 disabled:bg-stone-300 transition shadow-sm"
+                          >
+                            <ShoppingBag size={12} />
+                            {isOutOfStock ? "Sold Out" : "Add"}
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 } else {
-                  // List View Mode
+                  // List / Horizontal View Mode
                   return (
-                    <div
+                    <Link
                       key={prod.id}
-                      className="flex gap-6 bg-white/40 dark:bg-stone-900/40 backdrop-blur-sm border border-stone-200 dark:border-stone-850 rounded-3xl p-4 hover:shadow-soft transition items-center"
+                      to={productUrl}
+                      className="group flex gap-6 bg-white border border-stone-200 rounded-3xl p-4 hover:shadow-luxury transition duration-300 items-center w-full"
                     >
                       <img
                         src={getProductImageUrl(prod.image_url)}
                         alt={prod.name}
-                        className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-2xl cursor-pointer"
-                        onClick={() => setSelectedPreviewProduct(prod)}
+                        className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-2xl group-hover:scale-105 transition"
                       />
                       <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">{prod.categories?.name}</span>
-                        <h3 className="font-bold text-base truncate cursor-pointer hover:underline" onClick={() => setSelectedPreviewProduct(prod)}>{prod.name}</h3>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#B08D57]">{prod.categories?.name || "General"}</span>
+                        <h3 className="font-serif font-bold text-base truncate text-[#1A1918] group-hover:text-[#B08D57] transition-colors">{prod.name}</h3>
                         <p className="text-xs text-stone-500 mt-1 line-clamp-2 hidden sm:block">{prod.description}</p>
                         
                         <div className="flex items-baseline gap-2 mt-2">
-                          <span className="text-base font-bold">₹{prod.discount_price || prod.price}</span>
+                          <span className="text-base font-extrabold text-stone-950">₹{prod.discount_price || prod.price}</span>
                           {prod.discount_price && <span className="text-xs line-through text-stone-400">₹{prod.price}</span>}
                         </div>
                       </div>
                       <div className="flex flex-col gap-2 shrink-0 items-end">
                         {user && (
                           <button
-                            onClick={() => handleWishlist(prod.id)}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleWishlist(prod.id);
+                            }}
                             className={`p-2 rounded-full border shadow-sm transition ${
-                              isWish ? "border-stone-955 text-stone-955 dark:border-white" : "border-stone-200 text-stone-400"
+                              isWish ? "border-stone-955 text-stone-955" : "border-stone-200 text-stone-400"
                             }`}
                           >
                             <Heart size={16} className={isWish ? "fill-current" : ""} />
                           </button>
                         )}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setSelectedPreviewProduct(prod)}
-                            className="p-2 rounded-full border border-stone-200 hover:border-stone-400 dark:border-stone-700 text-stone-500 hover:text-stone-950"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          {user && (
-                            <button
-                              onClick={() => {
-                                addItem(prod.id, 1);
-                                addToast(`Added ${prod.name} to cart!`);
-                              }}
-                              disabled={isOutOfStock}
-                              className="bg-stone-950 text-white dark:bg-white dark:text-stone-950 px-3 py-1.5 rounded-full text-xs font-bold disabled:bg-stone-300 transition"
-                            >
-                              {isOutOfStock ? "Sold Out" : "Add to Cart"}
-                            </button>
-                          )}
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            addItem(prod.id, 1);
+                            addToast(`Added ${prod.name} to cart!`);
+                          }}
+                          disabled={isOutOfStock}
+                          className="bg-[#1A1918] text-white px-4 py-2 rounded-full text-xs font-bold disabled:bg-stone-300 transition shadow-sm"
+                        >
+                          {isOutOfStock ? "Sold Out" : "Add to Cart"}
+                        </button>
                       </div>
-                    </div>
+                    </Link>
                   );
                 }
               })}

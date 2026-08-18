@@ -1,119 +1,109 @@
 import { ArrowRight, Heart, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useStore } from "../context/StoreContext";
-import RatingStars from "./RatingStars";
 import { getProductImageUrl } from "../services/database";
 
 export default function ProductCard({
   product,
   categoryName,
-  averageRating = 0,
-  reviewCount = 0,
   formatMoney
 }) {
   const { addToCart, isLikedProduct, toggleLikedProduct } = useStore();
-  const liked = isLikedProduct(product.id);
-  const isOutOfStock = Number(product.inventory) <= 0;
-  const hasSalePrice = Number(product.compareAtPrice) > Number(product.price);
+  const liked = isLikedProduct(product?.id);
+  const isOutOfStock = Number(product?.inventory || 0) <= 0;
+  const hasSalePrice = Number(product?.compareAtPrice || 0) > Number(product?.price || 0);
   const discountPercent = hasSalePrice
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : 0;
 
-  return (
-    <article className="product-depth-card group lift-card flex h-full w-full flex-col overflow-hidden rounded-3xl border border-[#ddcdbc] bg-[#fffaf3] shadow-soft dark:border-[#3a2d25] dark:bg-[#211915]">
-      <button
-        type="button"
-        onClick={() => toggleLikedProduct(product.id)}
-        className={`absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border bg-[#fffaf3]/92 shadow-sm backdrop-blur transition dark:bg-[#16110e]/90 dark:text-stone-400 sm:right-4 sm:top-4 sm:h-11 sm:w-11 ${liked
-            ? "border-rose-200 text-rose-500 dark:border-rose-900"
-            : "border-[#ddcdbc] text-stone-500 hover:border-terracotta hover:text-rose-500 dark:border-[#3a2d25] dark:hover:border-[#7b5b48]"
-          }`}
-        aria-label={liked ? "Remove from like list" : "Add to like list"}
-      >
-        <Heart size={18} className={liked ? "fill-current" : ""} />
-      </button>
+  const targetLink = `/products/${product?.slug || product?.id}`;
 
-      <Link to={`/products/${product.slug}`} className="block">
-        <div className="relative aspect-[4/4.3] overflow-hidden bg-[#f1e0cd] dark:bg-[#2a201a]">
+  return (
+    <Link to={targetLink} className="group block h-full w-full">
+      <article className="relative flex h-full w-full flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-soft hover:shadow-luxury transition-all duration-300">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleLikedProduct(product.id);
+          }}
+          className={`absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-sm backdrop-blur transition ${
+            liked
+              ? "border-rose-200 text-rose-500"
+              : "border-stone-200 text-stone-400 hover:text-rose-500"
+          }`}
+          aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <Heart size={18} className={liked ? "fill-current" : ""} />
+        </button>
+
+        <div className="relative aspect-square overflow-hidden bg-stone-100">
           <img
-            src={getProductImageUrl(product.image_url || product.image || product.gallery?.[0])}
-            alt={product.name}
-            className="motion-media h-full w-full object-cover"
+            src={getProductImageUrl(product?.image_url || product?.image || product?.gallery?.[0])}
+            alt={product?.name || "Product"}
+            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               e.currentTarget.onerror = null;
               e.currentTarget.src = "/hero-keychain.svg";
             }}
           />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-            {product.featured ? (
-              <span className="rounded-full bg-terracotta px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-sm">
+            {product?.featured ? (
+              <span className="rounded-full bg-[#B08D57] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
                 New
               </span>
             ) : null}
             {hasSalePrice ? (
-              <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-sm">
-                {discountPercent}% off
+              <span className="rounded-full bg-emerald-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                {discountPercent}% OFF
               </span>
             ) : null}
           </div>
         </div>
-      </Link>
 
-      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500 dark:text-stone-400">
-            {categoryName}
-          </p>
-          <Link to={`/products/${product.slug}`} className="mt-2 block">
-            <h3 className="font-sans text-lg font-semibold text-ink dark:text-white sm:text-xl">{product.name}</h3>
-          </Link>
-        </div>
-
-        <p className="text-sm leading-6 text-stone-600 dark:text-stone-400">{product.shortDescription}</p>
-
-        <div className="mt-auto flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-1 flex-col gap-3 p-5">
           <div>
-            <div className="flex items-center gap-2">
-              <RatingStars rating={averageRating} size={14} />
-              <span className="text-sm font-medium text-stone-600 dark:text-stone-400">
-                {averageRating.toFixed(1)} ({reviewCount})
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#B08D57]">
+              {categoryName || product?.categories?.name || "General"}
+            </p>
+            <h3 className="font-serif text-lg font-bold text-[#1A1918] group-hover:text-[#B08D57] transition-colors mt-1">
+              {product?.name}
+            </h3>
+          </div>
+
+          {product?.shortDescription && (
+            <p className="text-xs leading-relaxed text-stone-500 line-clamp-2">{product.shortDescription}</p>
+          )}
+
+          <div className="mt-auto flex items-center justify-between pt-2 border-t border-stone-100">
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-extrabold text-[#1A1918]">
+                {formatMoney ? formatMoney(product?.price) : `₹${product?.discount_price || product?.price}`}
               </span>
-            </div>
-            <div className="mt-2 flex items-center gap-3">
-              <span className="text-xl font-semibold text-ink dark:text-white sm:text-2xl">
-                {formatMoney(product.price)}
-              </span>
-              {hasSalePrice ? (
-                <span className="text-sm font-semibold text-stone-400 line-through">
+              {hasSalePrice && formatMoney ? (
+                <span className="text-xs text-stone-400 line-through">
                   {formatMoney(product.compareAtPrice)}
                 </span>
               ) : null}
             </div>
-            <p className={`mt-2 text-xs font-semibold ${isOutOfStock ? "text-rose-600" : "text-moss dark:text-emerald-300"}`}>
-              {isOutOfStock ? "Sold out" : `${product.inventory} in stock`}
-            </p>
-          </div>
 
-          <div className="flex w-full flex-col gap-2 sm:w-auto">
             <button
               type="button"
-              onClick={() => addToCart({ productId: product.id, quantity: 1 })}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addToCart({ productId: product.id, quantity: 1 });
+              }}
               disabled={isOutOfStock}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-300 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200 sm:w-auto"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#1A1918] hover:bg-[#33302C] px-4 py-2 text-xs font-bold text-white transition shadow-sm disabled:bg-stone-300"
             >
-              <ShoppingBag size={16} />
-              Add
+              <ShoppingBag size={14} />
+              <span>{isOutOfStock ? "Sold Out" : "Add"}</span>
             </button>
-            <Link
-              to={`/products/${product.slug}`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#ddcdbc] px-4 py-2 text-sm font-semibold text-ink transition duration-300 hover:-translate-y-0.5 hover:border-terracotta hover:text-terracotta dark:border-[#3a2d25] dark:text-white dark:hover:border-[#7b5b48] sm:w-auto"
-            >
-              View
-              <ArrowRight size={16} className="transition duration-300 group-hover:translate-x-0.5" />
-            </Link>
           </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </Link>
   );
 }

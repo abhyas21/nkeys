@@ -2,16 +2,14 @@ import { useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { signOut } from "../services/auth";
 import { getProductImageUrl } from "../services/database";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { ShoppingBag, Heart, User, LogOut, LayoutDashboard, ShoppingCart, Moon, Sun, Search } from "lucide-react";
+import { ShoppingBag, Heart, User, LogOut, LayoutDashboard, Search, Home as HomeIcon, ShoppingCart } from "lucide-react";
 
 export default function CustomerLayout() {
   const { user, profile, isAdmin, logout } = useAuth();
   const { cartCount, cartTotal, cartItems, updateQuantity, removeItem } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [navSearch, setNavSearch] = useState("");
   const navigate = useNavigate();
 
@@ -25,11 +23,6 @@ export default function CustomerLayout() {
     }
   };
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle("dark");
-  };
-
   const handleNavSearchSubmit = (e) => {
     e.preventDefault();
     if (navSearch.trim()) {
@@ -39,45 +32,45 @@ export default function CustomerLayout() {
   };
 
   return (
-    <div className={`min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100 transition-colors duration-200 pb-20 md:pb-0`}>
+    <div className="min-h-screen bg-[#FAF8F5] text-[#1A1918] transition-colors duration-200 pb-24 md:pb-20">
       {/* Top Header Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-b border-stone-200 dark:border-stone-850">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-soft">
         <div className="max-w-[1800px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 h-16 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-3 font-bold text-xl text-stone-950 dark:text-stone-50 shrink-0 group">
+          <Link to="/" className="flex items-center gap-3 font-bold text-xl text-stone-955 shrink-0 group">
             <img src="/logo.png" alt="NKeys Logo" className="w-10 h-10 object-contain rounded-full border border-amber-500/20 shadow-sm group-hover:scale-105 transition-transform" />
             <span className="font-serif tracking-tight text-lg md:text-xl">NKeys Store</span>
           </Link>
           
-          <form onSubmit={handleNavSearchSubmit} className="hidden md:flex relative max-w-xs w-full">
+          <form onSubmit={handleNavSearchSubmit} className="hidden md:flex relative max-w-sm w-full">
             <input
               type="text"
               value={navSearch}
               onChange={(e) => setNavSearch(e.target.value)}
-              placeholder="Search catalog..."
-              className="w-full rounded-full border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-850 px-4 py-1.5 pl-9 text-xs outline-none focus:border-stone-400"
+              placeholder="Search catalog, keychains, stickers..."
+              className="w-full rounded-full border border-stone-200 bg-stone-50 px-4 py-2 pl-10 text-xs outline-none focus:border-[#B08D57] transition"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400">
               <Search size={14} />
             </span>
           </form>
 
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/" className="font-semibold text-sm hover:text-stone-500 transition">Home</Link>
-            <Link to="/products" className="font-semibold text-sm hover:text-stone-500 transition">Shop</Link>
+            <Link to="/" className="font-semibold text-sm hover:text-[#B08D57] transition">Home</Link>
+            <Link to="/products" className="font-semibold text-sm hover:text-[#B08D57] transition">Shop</Link>
             {user && (
               <>
-                <Link to="/wishlist" className="font-semibold text-sm hover:text-stone-500 flex items-center gap-1 transition">
+                <Link to="/wishlist" className="font-semibold text-sm hover:text-[#B08D57] flex items-center gap-1 transition">
                   <Heart size={16} />
                   <span>Wishlist</span>
                 </Link>
-                <Link to="/profile" className="font-semibold text-sm hover:text-stone-500 flex items-center gap-1 transition">
+                <Link to="/profile" className="font-semibold text-sm hover:text-[#B08D57] flex items-center gap-1 transition">
                   <User size={16} />
                   <span>Profile</span>
                 </Link>
               </>
             )}
             {isAdmin && (
-              <Link to="/admin" className="font-semibold text-sm text-stone-600 hover:text-stone-950 dark:text-stone-400 dark:hover:text-stone-50 flex items-center gap-1 transition">
+              <Link to="/admin" className="font-semibold text-sm text-[#B08D57] hover:text-[#987643] flex items-center gap-1 transition">
                 <LayoutDashboard size={16} />
                 <span>Admin</span>
               </Link>
@@ -85,37 +78,19 @@ export default function CustomerLayout() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300">
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-
             {user ? (
-              <>
-                <button
-                  onClick={() => setCartOpen(true)}
-                  className="relative p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300"
-                  title="Shopping Bag"
-                >
-                  <ShoppingBag size={18} />
-                  {cartCount > 0 && (
-                    <span className="absolute top-0 right-0 h-4 w-4 bg-stone-950 text-white dark:bg-white dark:text-stone-950 rounded-full text-[10px] flex items-center justify-center font-bold">
-                      {cartCount}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-stone-200 dark:border-stone-800 text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition"
-                  title="Log out of session"
-                >
-                  <LogOut size={14} />
-                  <span>LOGOUT</span>
-                </button>
-              </>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-stone-200 text-xs font-bold uppercase tracking-wider text-stone-700 hover:bg-stone-100 transition"
+                title="Log out"
+              >
+                <LogOut size={14} />
+                <span>Logout</span>
+              </button>
             ) : (
               <Link
                 to="/login"
-                className="bg-stone-950 hover:bg-stone-900 text-white dark:bg-white dark:text-stone-955 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition shadow-sm"
+                className="bg-[#1A1918] hover:bg-[#33302C] text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition shadow-sm"
               >
                 Login
               </Link>
@@ -125,40 +100,49 @@ export default function CustomerLayout() {
       </header>
 
       {/* Main Workspace */}
-      <main className="max-w-[1800px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-8 pb-24 md:pb-8">
+      <main className="max-w-[1800px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-8 pb-24 md:pb-12">
         <ErrorBoundary>
           <Outlet />
         </ErrorBoundary>
       </main>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 flex items-center justify-around h-16 md:hidden px-2">
-        <Link to="/" className="flex flex-col items-center justify-center text-stone-500 hover:text-stone-950 dark:hover:text-stone-100">
-          <span className="text-[10px] font-bold uppercase tracking-wider">Home</span>
+      {/* Bottom Fixed Navigation Bar (Desktop & Mobile) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200 shadow-luxury flex items-center justify-around h-16 px-4">
+        <Link to="/" className="flex flex-col items-center justify-center text-stone-600 hover:text-[#B08D57] transition">
+          <HomeIcon size={18} />
+          <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">Home</span>
         </Link>
-        <Link to="/products" className="flex flex-col items-center justify-center text-stone-500 hover:text-stone-950 dark:hover:text-stone-100">
-          <span className="text-[10px] font-bold uppercase tracking-wider">Shop</span>
+        <Link to="/products" className="flex flex-col items-center justify-center text-stone-600 hover:text-[#B08D57] transition">
+          <Search size={18} />
+          <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">Shop</span>
         </Link>
         {user && (
-          <Link to="/wishlist" className="flex flex-col items-center justify-center text-stone-500 hover:text-stone-950 dark:hover:text-stone-100">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Wishlist</span>
+          <Link to="/wishlist" className="flex flex-col items-center justify-center text-stone-600 hover:text-[#B08D57] transition">
+            <Heart size={18} />
+            <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">Wishlist</span>
           </Link>
         )}
-        <button onClick={() => setCartOpen(true)} className="relative flex flex-col items-center justify-center text-stone-500 hover:text-stone-950 dark:hover:text-stone-100">
-          <span className="text-[10px] font-bold uppercase tracking-wider">Cart</span>
+        <button
+          onClick={() => setCartOpen(true)}
+          className="relative flex flex-col items-center justify-center text-stone-600 hover:text-[#B08D57] transition"
+        >
+          <ShoppingBag size={18} />
           {cartCount > 0 && (
-            <span className="absolute -top-1.5 -right-2.5 h-4 w-4 bg-stone-950 text-white dark:bg-white dark:text-stone-955 rounded-full text-[9px] flex items-center justify-center font-bold">
+            <span className="absolute -top-1 -right-2 h-4 w-4 bg-[#B08D57] text-white rounded-full text-[9px] flex items-center justify-center font-bold shadow-sm">
               {cartCount}
             </span>
           )}
+          <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">Bag ({cartCount})</span>
         </button>
         {user ? (
-          <button onClick={handleLogout} className="flex flex-col items-center justify-center text-stone-500 hover:text-stone-950 dark:hover:text-stone-100">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Logout</span>
-          </button>
+          <Link to="/profile" className="flex flex-col items-center justify-center text-stone-600 hover:text-[#B08D57] transition">
+            <User size={18} />
+            <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">Profile</span>
+          </Link>
         ) : (
-          <Link to="/login" className="flex flex-col items-center justify-center text-stone-950 dark:text-white font-bold">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Login</span>
+          <Link to="/login" className="flex flex-col items-center justify-center text-stone-950 font-bold">
+            <User size={18} />
+            <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">Login</span>
           </Link>
         )}
       </nav>

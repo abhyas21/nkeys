@@ -95,13 +95,10 @@ export default function Home() {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="flex-1 space-y-6 text-center md:text-left z-10"
         >
-          <span className="inline-flex items-center gap-2 backdrop-blur-md bg-white/10 dark:bg-black/30 text-[#E5D7BE] border border-white/15 text-[11px] font-semibold uppercase tracking-[0.25em] px-4 py-1.5 rounded-full shadow-sm">
+          <span className="inline-flex items-center gap-2 backdrop-blur-md bg-white/10 text-[#E5D7BE] border border-white/15 text-[11px] font-semibold uppercase tracking-[0.25em] px-4 py-1.5 rounded-full shadow-sm">
             <Sparkles size={12} className="text-[#B08D57]" /> New Arrivals Collection
           </span>
-          <h1 className="font-serif text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] text-cream tracking-tight">
-            Custom Acrylic & Metal Keychains
-          </h1>
-          <p className="font-sans text-stone-300 max-w-lg xl:max-w-xl text-sm md:text-base xl:text-lg leading-relaxed">
+          <p className="font-sans text-stone-300 max-w-lg xl:max-w-xl text-sm md:text-base xl:text-lg leading-relaxed pt-2">
             Express your unique identity with precision-engraved names, custom artwork, and scratch-resistant metallic finishes.
           </p>
           <div className="pt-2">
@@ -130,10 +127,6 @@ export default function Home() {
             {/* Floating Decorative Badges */}
             <div className="absolute -top-4 -left-4 backdrop-blur-xl bg-stone-950/70 border border-[#B08D57]/40 text-[#E5D7BE] px-3.5 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1.5 shadow-xl z-20">
               <Sparkles size={12} className="text-[#B08D57]" /> Premium Engraving
-            </div>
-
-            <div className="absolute -bottom-4 -right-4 backdrop-blur-xl bg-stone-950/70 border border-white/20 text-stone-200 px-3.5 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1.5 shadow-xl z-20">
-              <Star size={12} className="text-[#B08D57] fill-[#B08D57]" /> 4.9 (500+ Reviews)
             </div>
 
             <img
