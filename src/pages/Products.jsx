@@ -293,6 +293,8 @@ export default function Products() {
                         <img
                           src={getProductImageUrl(prod.image_url)}
                           alt={prod.name}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />
                         {user && (
@@ -362,6 +364,8 @@ export default function Products() {
                       <img
                         src={getProductImageUrl(prod.image_url)}
                         alt={prod.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-2xl group-hover:scale-105 transition"
                       />
                       <div className="flex-1 min-w-0">

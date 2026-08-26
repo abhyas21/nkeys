@@ -63,8 +63,23 @@ const writeDemo = (key, value) => {
   }
 };
 
+// In-memory cache for fast navigation
+let categoriesCache = { data: null, timestamp: 0 };
+let productsCache = { data: null, timestamp: 0 };
+const CACHE_TTL = 30000; // 30 seconds
+
+export function clearCache() {
+  categoriesCache = { data: null, timestamp: 0 };
+  productsCache = { data: null, timestamp: 0 };
+}
+
 // 1. Categories
 export async function getCategories() {
+  const now = Date.now();
+  if (categoriesCache.data && (now - categoriesCache.timestamp < CACHE_TTL)) {
+    return categoriesCache.data;
+  }
+
   const { data, error } = await supabase
     .from("categories")
     .select("*")
@@ -72,13 +87,15 @@ export async function getCategories() {
 
   if (error) {
     console.error("Error fetching categories:", error);
-    return [];
+    return categoriesCache.data || [];
   }
 
+  categoriesCache = { data: data || [], timestamp: now };
   return data || [];
 }
 
 export async function createCategory({ id, name, image_url }) {
+  clearCache();
   const { data, error } = await supabase
     .from("categories")
     .insert([{ id, name, image_url }])
@@ -89,6 +106,7 @@ export async function createCategory({ id, name, image_url }) {
 }
 
 export async function deleteCategory(id) {
+  clearCache();
   const { error } = await supabase
     .from("categories")
     .delete()
@@ -98,6 +116,11 @@ export async function deleteCategory(id) {
 
 // 2. Products
 export async function getProducts() {
+  const now = Date.now();
+  if (productsCache.data && (now - productsCache.timestamp < CACHE_TTL)) {
+    return productsCache.data;
+  }
+
   const { data, error } = await supabase
     .from("products")
     .select("*, categories(*)")
@@ -105,10 +128,10 @@ export async function getProducts() {
 
   if (error) {
     console.error("Error fetching products:", error);
-    return [];
+    return productsCache.data || [];
   }
 
-  return (data || []).map((p) => ({
+  const formatted = (data || []).map((p) => ({
     ...p,
     is_active: p.is_active ?? true,
     category_name: p.categories?.name || "General",
@@ -119,9 +142,13 @@ export async function getProducts() {
     image_url: p.image_url || p.image || "/hero-keychain.svg",
     categories: p.categories || { name: "General" }
   }));
+
+  productsCache = { data: formatted, timestamp: now };
+  return formatted;
 }
 
 export async function createProduct(product) {
+  clearCache();
   const slug = product.slug || (product.name || "product").toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const dStock = Number(product.stock_d ?? 10);
   const kStock = Number(product.stock_k ?? 10);
@@ -278,6 +305,7 @@ export async function updateProduct(id, product) {
 }
 
 export async function deleteProduct(id) {
+  clearCache();
   let supabaseError = null;
   markDeleted(id);
 
