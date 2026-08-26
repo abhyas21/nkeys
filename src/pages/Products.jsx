@@ -279,15 +279,15 @@ export default function Products() {
             }>
               {filteredAndSortedProducts.map((prod) => {
                 const isWish = wishlistIds.has(prod.id);
-                const isOutOfStock = ((prod.stock_d || 0) + (prod.stock_k || 0)) <= 0;
+                const isOutOfStock = Number(prod.stock ?? prod.inventory ?? ((prod.stock_d || 0) + (prod.stock_k || 0))) <= 0;
                 const productUrl = `/products/${prod.id}`;
                 
                 if (viewMode === "grid") {
                   return (
-                    <Link
+                    <article
                       key={prod.id}
-                      to={productUrl}
-                      className="group relative bg-white border border-stone-200 rounded-3xl overflow-hidden flex flex-col hover:shadow-luxury transition duration-300 w-full"
+                      onClick={() => navigate(productUrl)}
+                      className="group relative bg-white border border-stone-200 rounded-3xl overflow-hidden flex flex-col hover:shadow-luxury transition duration-300 w-full cursor-pointer"
                     >
                       <div className="relative aspect-square overflow-hidden bg-stone-100">
                         <img
@@ -301,8 +301,8 @@ export default function Products() {
                           <button
                             type="button"
                             onClick={(e) => {
-                              e.preventDefault();
                               e.stopPropagation();
+                              e.preventDefault();
                               handleWishlist(prod.id);
                             }}
                             className={`absolute top-4 right-4 p-2 rounded-full border bg-white/90 shadow-sm transition ${
@@ -338,28 +338,29 @@ export default function Products() {
                           <button
                             type="button"
                             onClick={(e) => {
-                              e.preventDefault();
                               e.stopPropagation();
-                              addItem(prod.id, 1);
-                              addToast(`Added ${prod.name} to cart!`);
+                              e.preventDefault();
+                              if (isOutOfStock) return;
+                              addItem(prod, 1);
+                              addToast(`Added ${prod.name} to bag!`);
                             }}
                             disabled={isOutOfStock}
-                            className="bg-[#1A1918] hover:bg-[#33302C] text-white px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 disabled:bg-stone-300 transition shadow-sm"
+                            className="bg-[#1A1918] active:bg-[#33302C] hover:bg-[#33302C] text-white px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 disabled:bg-stone-300 transition shadow-sm"
                           >
                             <ShoppingBag size={12} />
                             {isOutOfStock ? "Sold Out" : "Add"}
                           </button>
                         </div>
                       </div>
-                    </Link>
+                    </article>
                   );
                 } else {
                   // List / Horizontal View Mode
                   return (
-                    <Link
+                    <article
                       key={prod.id}
-                      to={productUrl}
-                      className="group flex gap-6 bg-white border border-stone-200 rounded-3xl p-4 hover:shadow-luxury transition duration-300 items-center w-full"
+                      onClick={() => navigate(productUrl)}
+                      className="group flex gap-6 bg-white border border-stone-200 rounded-3xl p-4 hover:shadow-luxury transition duration-300 items-center w-full cursor-pointer"
                     >
                       <img
                         src={getProductImageUrl(prod.image_url)}
@@ -383,8 +384,8 @@ export default function Products() {
                           <button
                             type="button"
                             onClick={(e) => {
-                              e.preventDefault();
                               e.stopPropagation();
+                              e.preventDefault();
                               handleWishlist(prod.id);
                             }}
                             className={`p-2 rounded-full border shadow-sm transition ${
@@ -397,18 +398,19 @@ export default function Products() {
                         <button
                           type="button"
                           onClick={(e) => {
-                            e.preventDefault();
                             e.stopPropagation();
-                            addItem(prod.id, 1);
-                            addToast(`Added ${prod.name} to cart!`);
+                            e.preventDefault();
+                            if (isOutOfStock) return;
+                            addItem(prod, 1);
+                            addToast(`Added ${prod.name} to bag!`);
                           }}
                           disabled={isOutOfStock}
-                          className="bg-[#1A1918] text-white px-4 py-2 rounded-full text-xs font-bold disabled:bg-stone-300 transition shadow-sm"
+                          className="bg-[#1A1918] active:bg-[#33302C] text-white px-4 py-2 rounded-full text-xs font-bold disabled:bg-stone-300 transition shadow-sm"
                         >
                           {isOutOfStock ? "Sold Out" : "Add to Cart"}
                         </button>
                       </div>
-                    </Link>
+                    </article>
                   );
                 }
               })}
