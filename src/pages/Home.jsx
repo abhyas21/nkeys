@@ -82,57 +82,93 @@ export default function Home() {
 
   return (
     <div className="space-y-16">
-      {/* Luxury Hero Banner */}
-      <section className="relative rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-[#1F1916] via-[#161210] to-[#0D0B0A] text-cream p-8 md:p-16 lg:p-20 xl:py-24 xl:px-20 flex flex-col md:flex-row items-center justify-between gap-10 shadow-luxury border border-[#2E2822]">
-        {/* Soft Radial Ambient Glows */}
-        <div className="absolute -right-16 -top-16 w-96 h-96 bg-[#B08D57]/20 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute -left-16 -bottom-16 w-80 h-80 bg-[#C5A059]/15 rounded-full blur-[90px] pointer-events-none" />
-
+      {/* Luxury Light Hero Banner */}
+      <section className="relative rounded-[2.5rem] overflow-hidden bg-[#FAF6F0] text-stone-900 p-8 sm:p-12 md:p-16 lg:p-20 xl:py-24 xl:px-20 flex flex-col lg:flex-row items-center justify-between gap-12 border border-stone-200/50">
         {/* Left Typography Content */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="flex-1 space-y-6 text-center md:text-left z-10"
+          className="flex-1 space-y-6 text-left z-10"
         >
-          <span className="inline-flex items-center gap-2 backdrop-blur-md bg-white/10 text-[#E5D7BE] border border-white/15 text-[11px] font-semibold uppercase tracking-[0.25em] px-4 py-1.5 rounded-full shadow-sm">
-            <Sparkles size={12} className="text-[#B08D57]" /> New Arrivals Collection
+          <span className="text-[#B08D57] tracking-[0.25em] text-[11px] sm:text-xs font-bold uppercase block">
+            HANDCRAFTED IN INDIA
           </span>
-          <p className="font-sans text-stone-300 max-w-lg xl:max-w-xl text-sm md:text-base xl:text-lg leading-relaxed pt-2">
-            Express your unique identity with precision-engraved names, custom artwork, and scratch-resistant metallic finishes.
+
+          <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[78px] text-[#1A1918] font-normal leading-[1.08] tracking-tight">
+            Keys to <br />
+            <span className="italic text-[#B89762] font-serif font-normal">Your</span> <br />
+            Story
+          </h1>
+
+          <p className="font-sans text-stone-600 text-sm sm:text-base md:text-lg max-w-md leading-relaxed">
+            Custom keychains and stickers that carry your personality. Designed with care, made to last.
           </p>
-          <div className="pt-2">
-            <Link
-              to="/products"
-              className="inline-flex items-center gap-3 bg-[#B08D57] hover:bg-[#987643] text-white font-semibold text-sm px-8 py-3.5 rounded-full shadow-[0_10px_25px_rgba(176,141,87,0.35)] hover:shadow-[0_15px_35px_rgba(176,141,87,0.5)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300"
-            >
-              <span>Explore Collection</span>
-              <ArrowRight size={16} />
-            </Link>
+
+          {/* Feature Badges Row */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="bg-white/90 border border-stone-200/80 shadow-xs rounded-full px-4 py-2 text-xs font-medium text-stone-700 flex items-center gap-2">
+              <Sparkles size={14} className="text-[#B89762]" />
+              <span>Premium Engraving</span>
+            </div>
+            <div className="bg-white/90 border border-stone-200/80 shadow-xs rounded-full px-4 py-2 text-xs font-medium text-stone-700 flex items-center gap-2">
+              <span className="text-stone-400">🛡️</span>
+              <span>Quality Assured</span>
+            </div>
+            <div className="bg-white/90 border border-stone-200/80 shadow-xs rounded-full px-4 py-2 text-xs font-medium text-stone-700 flex items-center gap-2">
+              <span className="text-stone-400">🚚</span>
+              <span>Fast Delivery</span>
+            </div>
+            <div className="bg-white/90 border border-stone-200/80 shadow-xs rounded-full px-4 py-2 text-xs font-medium text-stone-700 flex items-center gap-2">
+              <span className="text-stone-400">🔄</span>
+              <span>Easy Returns</span>
+            </div>
           </div>
         </motion.div>
 
-        {/* Right Floating Product Visual */}
+        {/* Right Staggered Visual Gallery Cards */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
+          initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full md:w-auto flex justify-center z-10 relative"
+          className="w-full lg:w-auto flex items-center justify-center gap-3 sm:gap-4 relative z-10 overflow-x-auto py-4"
         >
+          {/* Card 1 */}
           <motion.div
-            animate={{ y: [0, -12, 0] }}
-            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            className="relative"
+            whileHover={{ y: -6 }}
+            transition={{ duration: 0.3 }}
+            className="shrink-0"
           >
-            {/* Floating Decorative Badges */}
-            <div className="absolute -top-4 -left-4 backdrop-blur-xl bg-stone-950/70 border border-[#B08D57]/40 text-[#E5D7BE] px-3.5 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1.5 shadow-xl z-20">
-              <Sparkles size={12} className="text-[#B08D57]" /> Premium Engraving
-            </div>
-
             <img
-              src="https://images.unsplash.com/photo-1544816155-12df9643f363?w=500"
-              alt="Hero keychain display"
-              className="w-64 h-64 xl:w-80 xl:h-80 object-cover rounded-[2rem] shadow-[0_25px_60px_-15px_rgba(176,141,87,0.35)] border-2 border-white/15"
+              src="https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&auto=format&fit=crop"
+              alt="Luxury bag and accessory display"
+              className="w-36 sm:w-48 lg:w-52 h-52 sm:h-64 lg:h-72 object-cover rounded-[1.75rem] shadow-xl border border-stone-200/60"
+            />
+          </motion.div>
+
+          {/* Card 2 (Center Featured) */}
+          <motion.div
+            whileHover={{ y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="shrink-0 z-10"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&auto=format&fit=crop"
+              alt="Luxury red quilted handbag display"
+              className="w-44 sm:w-56 lg:w-60 h-60 sm:h-76 lg:h-84 object-cover rounded-[1.75rem] shadow-2xl border border-stone-200/60 -translate-y-2"
+            />
+          </motion.div>
+
+          {/* Card 3 */}
+          <motion.div
+            whileHover={{ y: -6 }}
+            transition={{ duration: 0.3 }}
+            className="shrink-0"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop"
+              alt="Luxury perfume and watch display"
+              className="w-36 sm:w-48 lg:w-52 h-52 sm:h-64 lg:h-72 object-cover rounded-[1.75rem] shadow-xl border border-stone-200/60"
             />
           </motion.div>
         </motion.div>

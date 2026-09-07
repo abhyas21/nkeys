@@ -34,77 +34,69 @@ export default function CustomerLayout() {
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1A1918] transition-colors duration-200 pb-24 md:pb-20">
       {/* Top Header Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-soft">
+      <header className="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-stone-200/60 shadow-none">
         <div className="max-w-[1800px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 h-16 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-3 font-bold text-xl text-stone-955 shrink-0 group">
-            <img src="/logo.png" alt="NKeys Logo" className="w-10 h-10 object-contain rounded-full border border-amber-500/20 shadow-sm group-hover:scale-105 transition-transform" />
-            <span className="font-serif tracking-tight text-lg md:text-xl">NKeys Store</span>
+          <Link to="/" className="flex items-center gap-3 font-bold text-xl text-stone-900 shrink-0 group">
+            <div className="w-8 h-8 rounded-full bg-[#B89762] text-white flex items-center justify-center font-serif text-sm font-semibold shadow-sm group-hover:scale-105 transition-transform">
+              N
+            </div>
+            <span className="font-serif tracking-tight text-lg md:text-xl font-bold">NKeys Store</span>
           </Link>
           
-          <form onSubmit={handleNavSearchSubmit} className="hidden md:flex relative max-w-sm w-full">
+          <form onSubmit={handleNavSearchSubmit} className="flex relative max-w-xl w-full mx-4">
             <input
               type="text"
               value={navSearch}
               onChange={(e) => setNavSearch(e.target.value)}
-              placeholder="Search catalog, keychains, stickers..."
-              className="w-full rounded-full border border-stone-200 bg-stone-50 px-4 py-2 pl-10 text-xs outline-none focus:border-[#B08D57] transition"
+              placeholder="Search keychains, stickers..."
+              className="w-full rounded-full border border-stone-200/80 bg-[#EFECE6] px-4 py-2 pl-10 text-xs outline-none focus:border-[#B08D57] transition text-stone-800 placeholder:text-stone-500"
             />
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400">
               <Search size={14} />
             </span>
           </form>
 
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/" className="font-semibold text-sm hover:text-[#B08D57] transition">Home</Link>
-            <Link to="/products" className="font-semibold text-sm hover:text-[#B08D57] transition">Shop</Link>
-            {user && (
-              <>
-                <Link to="/wishlist" className="font-semibold text-sm hover:text-[#B08D57] flex items-center gap-1 transition">
-                  <Heart size={16} />
-                  <span>Wishlist</span>
-                </Link>
-                <Link to="/profile" className="font-semibold text-sm hover:text-[#B08D57] flex items-center gap-1 transition">
-                  <User size={16} />
-                  <span>Profile</span>
-                </Link>
-              </>
-            )}
-            {isAdmin && (
-              <Link to="/admin" className="font-semibold text-sm text-[#B08D57] hover:text-[#987643] flex items-center gap-1 transition">
-                <LayoutDashboard size={16} />
-                <span>Admin</span>
-              </Link>
-            )}
-          </nav>
-
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {isAdmin && (
               <Link
                 to="/admin"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1A1918] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#33302C] transition shadow-sm"
+                className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#1A1918] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#33302C] transition shadow-sm"
               >
                 <LayoutDashboard size={14} />
-                <span>Admin Dashboard</span>
+                <span>Admin</span>
               </Link>
             )}
 
             {user ? (
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-stone-200 text-xs font-bold uppercase tracking-wider text-stone-700 hover:bg-stone-100 transition"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-stone-300 text-xs font-semibold text-stone-700 bg-white/70 hover:bg-white transition"
                 title="Log out"
               >
-                <LogOut size={14} />
+                <LogOut size={13} />
                 <span>Logout</span>
               </button>
             ) : (
               <Link
                 to="/login"
-                className="bg-[#1A1918] hover:bg-[#33302C] text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition shadow-sm"
+                className="border border-stone-300 rounded-full px-5 py-1.5 text-xs font-semibold text-stone-700 bg-white/70 hover:bg-white transition shadow-xs"
               >
                 Login
               </Link>
             )}
+
+            <button
+              onClick={() => setCartOpen(true)}
+              className="relative p-2 text-stone-800 hover:text-[#B08D57] transition"
+              title="Shopping Bag"
+            >
+              <ShoppingBag size={20} />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 h-4 w-4 bg-[#B08D57] text-white rounded-full text-[9px] flex items-center justify-center font-bold shadow-sm">
+                  {cartCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </header>
