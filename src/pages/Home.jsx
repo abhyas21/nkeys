@@ -17,9 +17,11 @@ export default function Home() {
   useEffect(() => {
     async function loadData() {
       try {
-        const prodData = await getProducts();
-        const catData = await getCategories();
-        setProducts(prodData);
+        const [prodData, catData] = await Promise.all([getProducts(), getCategories()]);
+        const activeProducts = (prodData || [])
+          .filter((product) => product.is_active !== false)
+          .sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0));
+        setProducts(activeProducts);
         setCategories(catData);
         
         if (user) {
@@ -126,51 +128,35 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* Right Staggered Visual Gallery Cards */}
+        {/* Three most recent active products */}
         <motion.div
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className="w-full lg:w-auto flex items-center justify-center gap-3 sm:gap-4 relative z-10 overflow-x-auto py-4"
         >
-          {/* Card 1 */}
-          <motion.div
-            whileHover={{ y: -6 }}
-            transition={{ duration: 0.3 }}
-            className="shrink-0"
-          >
-            <img
-              src="https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&auto=format&fit=crop"
-              alt="Luxury bag and accessory display"
-              className="w-36 sm:w-48 lg:w-52 h-52 sm:h-64 lg:h-72 object-cover rounded-[1.75rem] shadow-xl border border-stone-200/60"
-            />
-          </motion.div>
-
-          {/* Card 2 (Center Featured) */}
-          <motion.div
-            whileHover={{ y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="shrink-0 z-10"
-          >
-            <img
-              src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&auto=format&fit=crop"
-              alt="Luxury red quilted handbag display"
-              className="w-44 sm:w-56 lg:w-60 h-60 sm:h-76 lg:h-84 object-cover rounded-[1.75rem] shadow-2xl border border-stone-200/60 -translate-y-2"
-            />
-          </motion.div>
-
-          {/* Card 3 */}
-          <motion.div
-            whileHover={{ y: -6 }}
-            transition={{ duration: 0.3 }}
-            className="shrink-0"
-          >
-            <img
-              src="https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&auto=format&fit=crop"
-              alt="Luxury perfume and watch display"
-              className="w-36 sm:w-48 lg:w-52 h-52 sm:h-64 lg:h-72 object-cover rounded-[1.75rem] shadow-xl border border-stone-200/60"
-            />
-          </motion.div>
+          {products.slice(0, 3).map((product, index) => (
+            <motion.div
+              key={product.id}
+              whileHover={{ y: index === 1 ? -10 : -6 }}
+              transition={{ duration: 0.3 }}
+              className={`shrink-0 ${index === 1 ? "z-10" : ""}`}
+            >
+              <Link to={`/products/${product.id}`} className="block">
+                <div className={`relative overflow-hidden rounded-[1.75rem] shadow-xl border border-stone-200/60 ${index === 1 ? "-translate-y-2" : ""}`}>
+                  <img
+                    src={getProductImageUrl(product.image_url || product.image || product.gallery?.[0])}
+                    alt={product.name}
+                    className={`${index === 1 ? "w-44 sm:w-56 lg:w-60 h-60 sm:h-76 lg:h-84" : "w-36 sm:w-48 lg:w-52 h-52 sm:h-64 lg:h-72"} object-cover`}
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/70 p-3 text-left text-white">
+                    <p className="line-clamp-1 text-sm font-bold">{product.name}</p>
+                    <p className="mt-1 text-xs text-white/80">₹{product.discount_price || product.price}</p>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
         </motion.div>
       </section>
 
