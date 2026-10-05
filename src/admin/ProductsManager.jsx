@@ -1,490 +1,660 @@
-import { useEffect, useState } from "react";
-import { getProducts, getCategories, createProduct, updateProduct, deleteProduct, replaceProductImages, getProductImageUrl, createCategory } from "../services/database";
-import { Plus, Edit, Trash2, Tag, ImagePlus, X, FolderPlus } from "lucide-react";
-import { uploadProductImages, processImageSource } from "../lib/productImageStorage";
+import { useEffect, useState, useRef } from "react";
+import {
+  getProducts,
+  getCategories,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  createCategory,
+  getProductImageUrl
+} from "../services/database";
+import { useToast } from "../context/ToastContext";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  Upload,
+  ChevronDown,
+  Check,
+  Package,
+  Tag,
+  IndianRupee
+} from "lucide-react";
+
+const DEFAULT_CATEGORIES = [
+  { id: "cat-metal", name: "Metal" },
+  { id: "cat-acrylic", name: "Acrylic" },
+  { id: "cat-pvc", name: "PVC" },
+  { id: "cat-rubber", name: "Rubber" },
+  { id: "cat-wooden", name: "Wooden" },
+  { id: "cat-anime", name: "Anime" },
+  { id: "cat-gaming", name: "Gaming" },
+  { id: "cat-custom", name: "Custom" },
+  { id: "cat-other", name: "Other" }
+];
 
 export default function ProductsManager() {
-  const safeGetProductImageUrl = (p) => {
-    try {
-      return getProductImageUrl(p?.image_url || p?.image || p?.gallery?.[0] || p);
-    } catch {
-      return "/hero-keychain.svg";
-    }
-  };
+  const { addToast } = useToast();
+  const formRef = useRef(null);
+
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
 
-  const [editingId, setEditingId] = useState(null);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [discountPrice, setDiscountPrice] = useState("");
-  const [stock, setStock] = useState("20");
-  const [categoryId, setCategoryId] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageUrls, setImageUrls] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [isActive, setIsActive] = useState(true);
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    price: "",
+    discount_price: "",
+    stock: "20",
+    category_id: "",
+    images: [] // Up to 5 image URLs or Base64 strings
+  });
 
-  // Category creation modal
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  // Modal State for + Add New Category
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
+  const [savingCategory, setSavingCategory] = useState(false);
 
-  const [error, setError] = useState("");
-  const [msg, setMsg] = useState("");
-
+  // Load Products and Categories
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  async function loadData() {
     try {
-      const p = await getProducts();
-      const c = await getCategories();
-      setProducts(p);
-      setCategories(c);
-      if (c.length > 0 && !categoryId) setCategoryId(c[0].id);
+      setLoading(true);
+      const [prodData, catData] = await Promise.all([
+        getProducts(),
+        getCategories()
+      ]);
+
+      setProducts(prodData || []);
+
+      // Merge database categories with default categories (case-insensitive deduplication)
+      const catMap = new Map();
+      DEFAULT_CATEGORIES.forEach((c) => catMap.set(c.name.toLowerCase(), c));
+      (catData || []).forEach((c) => catMap.set(c.name.toLowerCase(), c));
+      const mergedCategories = Array.from(catMap.values()).sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
+      setCategories(mergedCategories);
     } catch (err) {
-      console.error(err);
+      console.error("Error loading products/categories:", err);
+      if (addToast) addToast("Failed to load products");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleCreateCategory = async (e) => {
-    e.preventDefault();
-    if (!newCategoryName.trim()) return;
-    try {
-      setCreatingCategory(true);
-      const catId = `cat-${Date.now()}`;
-      const created = await createCategory({
-        id: catId,
-        name: newCategoryName.trim(),
-        image_url: "/hero-keychain.svg"
-      });
-      const updatedCategories = await getCategories();
-      setCategories(updatedCategories);
-      setCategoryId(created?.id || catId);
-      setNewCategoryName("");
-      setShowCategoryModal(false);
-      setMsg(`New category "${newCategoryName.trim()}" added!`);
-    } catch (err) {
-      console.error("Create category error:", err);
-      setError("Failed to create category: " + (err.message || String(err)));
-    } finally {
-      setCreatingCategory(false);
-    }
-  };
+  // Handle Image Upload (up to 5 images)
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (!name || !price) {
-      setError("Product Name and Selling Price are required.");
+    const remainingSlots = 5 - formData.images.length;
+    if (remainingSlots <= 0) {
+      if (addToast) addToast("Maximum 5 images allowed");
       return;
     }
 
-    const totalStock = Number(stock || 20);
-    const activeImage = imageUrl || imageUrls[0] || "/hero-keychain.svg";
-    const gallery = imageUrls.slice(0, 5);
-    const numPrice = Number(price);
-    const numDiscount = discountPrice ? Number(discountPrice) : null;
+    const filesToProcess = files.slice(0, remainingSlots);
+    filesToProcess.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          images: [...prev.images, reader.result].slice(0, 5)
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
-    const payload = {
-      name,
-      description: description || name,
-      price: numPrice,
-      discount_price: numDiscount,
-      compare_at_price: numDiscount,
-      stock: totalStock,
-      inventory: totalStock,
-      stock_d: Math.floor(totalStock / 2),
-      stock_k: Math.ceil(totalStock / 2),
-      category_id: categoryId || categories[0]?.id || null,
-      image_url: activeImage,
-      image: activeImage,
-      images: gallery,
-      gallery,
-      is_active: isActive
-    };
+  const handleRemoveImage = (indexToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, idx) => idx !== indexToRemove)
+    }));
+  };
 
+  // Create New Category Modal Handler
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    const trimmed = newCategoryName.trim();
+
+    if (!trimmed) {
+      setCategoryError("Please enter a category name");
+      return;
+    }
+
+    // Check duplicate
+    if (categories.some((c) => c.name.toLowerCase() === trimmed.toLowerCase())) {
+      setCategoryError("Category already exists");
+      return;
+    }
+
+    setSavingCategory(true);
     try {
-      setError("");
-      let resultProduct = null;
-      if (editingId) {
-        resultProduct = await updateProduct(editingId, payload);
-        try {
-          await replaceProductImages(editingId, gallery);
-        } catch (e) {
-          console.warn("Images update notice:", e);
-        }
-      } else {
-        const id = `prod-${Date.now()}`;
-        resultProduct = await createProduct({ id, ...payload });
-        try {
-          await replaceProductImages(id, gallery);
-        } catch (e) {
-          console.warn("Images save notice:", e);
-        }
+      const generatedId = `cat-${trimmed.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now().toString(36)}`;
+      let savedCat = null;
+      try {
+        savedCat = await createCategory({ id: generatedId, name: trimmed });
+      } catch (err) {
+        console.warn("DB createCategory fallback:", err);
       }
 
-      if (resultProduct?._error) {
-        setError(`Supabase Database Alert: ${resultProduct._error}`);
+      const newCatObj = savedCat || { id: generatedId, name: trimmed };
+
+      // Update categories list and select it
+      setCategories((prev) => [...prev, newCatObj].sort((a, b) => a.name.localeCompare(b.name)));
+      setFormData((prev) => ({ ...prev, category_id: newCatObj.id }));
+
+      setIsCategoryModalOpen(false);
+      setNewCategoryName("");
+      setCategoryError("");
+      if (addToast) addToast(`Category "${trimmed}" created & selected!`);
+    } catch (err) {
+      setCategoryError("Failed to save category. Please try again.");
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  // Edit Existing Product
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+    const existingImages = [];
+    if (product.image_url) existingImages.push(product.image_url);
+    if (Array.isArray(product.gallery)) {
+      product.gallery.forEach((g) => {
+        if (g && !existingImages.includes(g)) existingImages.push(g);
+      });
+    }
+
+    setFormData({
+      name: product.name || "",
+      description: product.description || "",
+      price: product.price?.toString() || "",
+      discount_price: product.discount_price?.toString() || "",
+      stock: (product.stock ?? product.inventory ?? 20).toString(),
+      category_id: product.category_id || product.categories?.id || "",
+      images: existingImages.slice(0, 5)
+    });
+
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProduct(null);
+    setFormData({
+      name: "",
+      description: "",
+      price: "",
+      discount_price: "",
+      stock: "20",
+      category_id: "",
+      images: []
+    });
+  };
+
+  // Delete Product
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
+    try {
+      await deleteProduct(id);
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      if (addToast) addToast("Product deleted successfully");
+    } catch (err) {
+      console.error("Error deleting product:", err);
+      if (addToast) addToast("Failed to delete product");
+    }
+  };
+
+  // Submit Product (Create or Update)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name.trim()) {
+      if (addToast) addToast("Product name is required");
+      return;
+    }
+    if (!formData.category_id) {
+      if (addToast) addToast("Please select a category");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        price: parseFloat(formData.price) || 0,
+        discount_price: formData.discount_price ? parseFloat(formData.discount_price) : null,
+        stock: parseInt(formData.stock, 10) || 0,
+        inventory: parseInt(formData.stock, 10) || 0,
+        category_id: formData.category_id,
+        image_url: formData.images[0] || "/hero-keychain.svg",
+        gallery: formData.images
+      };
+
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, payload);
+        if (addToast) addToast("Product updated successfully!");
       } else {
-        setMsg(editingId ? "Product updated successfully!" : "Product added successfully!");
+        await createProduct({
+          id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+          ...payload
+        });
+        if (addToast) addToast("Product created successfully!");
       }
 
-      resetForm();
+      handleCancelEdit();
       await loadData();
     } catch (err) {
-      console.error("Save product error:", err);
-      setError(err?.message || String(err) || "Failed to save product.");
+      console.error("Error saving product:", err);
+      if (addToast) addToast("Failed to save product. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-  };
-
-  const handleImageUpload = (event) => {
-    const files = Array.from(event.target.files || []);
-    if (!files.length) return;
-
-    setUploading(true);
-    const readPromises = files.map((file) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(readPromises).then((base64Strings) => {
-      const validStrings = base64Strings.filter(Boolean);
-      if (validStrings.length > 0) {
-        setImageUrls((prev) => {
-          const combined = [...prev, ...validStrings];
-          const capped = combined.slice(0, 5);
-          if (!imageUrl && capped.length > 0) setImageUrl(capped[0]);
-          return capped;
-        });
-      }
-      setUploading(false);
-    });
-    event.target.value = "";
-  };
-
-  const removeImage = (indexToRemove) => {
-    setImageUrls((prev) => {
-      const next = prev.filter((_, idx) => idx !== indexToRemove);
-      if (next.length > 0) setImageUrl(next[0]);
-      else setImageUrl("");
-      return next;
-    });
-  };
-
-  const handleEdit = (prod) => {
-    setEditingId(prod.id);
-    setName(prod.name);
-    setDescription(prod.description || "");
-    setPrice(prod.price);
-    setDiscountPrice(prod.discount_price || "");
-    setStock(prod.stock || (prod.stock_d || 0) + (prod.stock_k || 0) || 20);
-    setCategoryId(prod.category_id || "");
-    setImageUrl(prod.image_url || "");
-    const galleryArr = Array.isArray(prod.gallery) && prod.gallery.length
-      ? prod.gallery
-      : (prod.product_images || []).map((img) => img.image_url);
-    setImageUrls(galleryArr.slice(0, 5));
-    setIsActive(prod.is_active);
-    setError("");
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
-    try {
-      const res = await deleteProduct(id);
-      setProducts((prev) => prev.filter((p) => String(p.id) !== String(id)));
-      if (res?._warning) {
-        setMsg(`Product removed (DB Notice: ${res._warning})`);
-      } else {
-        setMsg("Product deleted successfully.");
-      }
-      loadData();
-    } catch (err) {
-      console.error(err);
-      setError(err?.message || "Failed to delete product.");
-    }
-  };
-
-  const resetForm = () => {
-    setEditingId(null);
-    setName("");
-    setDescription("");
-    setPrice("");
-    setDiscountPrice("");
-    setStock("20");
-    setImageUrl("");
-    setImageUrls([]);
-    setIsActive(true);
-    setError("");
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold">Products Manager</h2>
-          <p className="text-xs text-stone-500 mt-1">Manage and edit your keychain & sticker inventories</p>
-        </div>
+    <div className="space-y-10 max-w-6xl mx-auto pb-16">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold font-serif text-stone-900">Products Management</h1>
+        <p className="text-xs text-stone-500 mt-1">
+          Add, edit, manage inventory, and categorize your storefront products.
+        </p>
       </div>
 
-      {msg && <div className="bg-stone-100 text-stone-900 dark:bg-stone-850 dark:text-stone-100 p-4 rounded-2xl text-sm font-medium">{msg}</div>}
-      {error && <div className="bg-stone-200 text-stone-950 dark:bg-stone-800 dark:text-stone-50 p-4 rounded-2xl text-sm font-medium">{error}</div>}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Editor Form */}
-        <form onSubmit={handleSave} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 rounded-3xl h-fit space-y-4 shadow-sm">
-          <h3 className="font-bold text-base flex items-center gap-2">
-            <Plus size={18} className="text-terracotta" /> {editingId ? "Edit Product" : "Add Product"}
-          </h3>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-stone-500">Product Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Laser Engraved Wooden Tag"
-              className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-850 outline-none focus:border-terracotta"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-stone-500">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Provide a short overview..."
-              rows={3}
-              className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-850 outline-none focus:border-terracotta resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-stone-500">Selling Price (₹)</label>
-              <input
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="250"
-                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-850 outline-none focus:border-terracotta"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-stone-500">Original / MRP Price (₹)</label>
-              <input
-                type="number"
-                value={discountPrice}
-                onChange={(e) => setDiscountPrice(e.target.value)}
-                placeholder="Optional e.g. 350"
-                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-850 outline-none focus:border-terracotta"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-stone-500">Total Stock Quantity *</label>
-              <input
-                type="number"
-                value={stock}
-                onChange={(e) => setStock(e.target.value)}
-                placeholder="20"
-                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-850 outline-none focus:border-[#B08D57]"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-stone-500">Category</label>
-                <button
-                  type="button"
-                  onClick={() => setShowCategoryModal(!showCategoryModal)}
-                  className="text-[11px] font-bold text-[#B08D57] hover:underline flex items-center gap-1"
-                >
-                  <FolderPlus size={12} /> + Add New
-                </button>
-              </div>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-850 outline-none focus:border-[#B08D57] appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22m6 9 6 6 6-6%22/></svg>')] bg-no-repeat bg-[position:right_1rem_center]"
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Inline Add Category Toggle */}
-          {showCategoryModal && (
-            <div className="p-3 bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-750 rounded-2xl space-y-2 animate-fade-in">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">Create New Category</span>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Category Name"
-                  className="flex-1 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs outline-none dark:border-stone-700 dark:bg-stone-900"
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateCategory}
-                  disabled={creatingCategory}
-                  className="bg-[#B08D57] text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-[#987643] transition"
-                >
-                  {creatingCategory ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </div>
+      {/* Product Form Card */}
+      <div
+        ref={formRef}
+        className="bg-white border border-stone-200 rounded-3xl p-6 sm:p-8 shadow-sm transition"
+      >
+        <div className="flex items-center justify-between pb-5 border-b border-stone-100 mb-6">
+          <h2 className="text-lg font-bold font-serif text-stone-900">
+            {editingProduct ? `Edit: ${editingProduct.name}` : "Add New Product"}
+          </h2>
+          {editingProduct && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="text-xs font-semibold text-stone-500 hover:text-stone-800 transition"
+            >
+              Cancel Edit
+            </button>
           )}
+        </div>
 
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Product Name */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-stone-500">Primary Image URL</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">
+              Product Name *
+            </label>
             <input
               type="text"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-850 outline-none focus:border-[#B08D57]"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g. Vintage Brass Custom Keychain"
+              className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-sm outline-none focus:border-[#B08D57] transition shadow-xs"
+            />
+          </div>
+
+          {/* Pricing Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">
+                Regular Price (₹) *
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                placeholder="299"
+                className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-sm outline-none focus:border-[#B08D57] transition shadow-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">
+                Discount / Sale Price (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.discount_price}
+                onChange={(e) => setFormData({ ...formData, discount_price: e.target.value })}
+                placeholder="Optional, e.g. 199"
+                className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-sm outline-none focus:border-[#B08D57] transition shadow-xs"
+              />
+            </div>
+          </div>
+
+          {/* Clean Row: Total Stock Quantity & Category */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Total Stock Quantity */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">
+                Total Stock Quantity *
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                placeholder="20"
+                className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-sm outline-none focus:border-[#B08D57] transition shadow-xs"
+              />
+            </div>
+
+            {/* Category Dropdown with Arrow & + Add New Category Trigger */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-stone-700">
+                  Category *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCategoryModalOpen(true);
+                    setCategoryError("");
+                  }}
+                  className="text-[11px] font-semibold text-[#B08D57] hover:text-[#91713d] hover:underline transition"
+                >
+                  + Add New Category
+                </button>
+              </div>
+
+              <div className="relative">
+                <select
+                  required
+                  value={formData.category_id}
+                  onChange={(e) => {
+                    if (e.target.value === "__add_new__") {
+                      setIsCategoryModalOpen(true);
+                      setCategoryError("");
+                    } else {
+                      setFormData({ ...formData, category_id: e.target.value });
+                    }
+                  }}
+                  className="w-full appearance-none px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-sm outline-none focus:border-[#B08D57] transition shadow-xs pr-10 cursor-pointer text-stone-800"
+                >
+                  <option value="" disabled>Select Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                  <option value="__add_new__" className="font-bold text-[#B08D57]">
+                    + Add New Category...
+                  </option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-stone-400">
+                  <ChevronDown size={16} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">
+              Description
+            </label>
+            <textarea
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="High quality laser-cut acrylic keychain with double-sided print..."
+              className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-sm outline-none focus:border-[#B08D57] transition shadow-xs"
             />
           </div>
 
           {/* 5-Image Upload Engine */}
-          <div className="rounded-2xl border border-stone-200 bg-stone-50 dark:bg-stone-850 p-4 space-y-3">
-            <div className="flex justify-between items-center">
-              <label className="text-xs font-bold uppercase tracking-wider text-stone-500">Product Images (Up to 5)</label>
-              <span className="text-[11px] font-semibold text-stone-400">{imageUrls.length}/5 uploaded</span>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700">
+                Product Images ({formData.images.length}/5)
+              </label>
+              <span className="text-[11px] text-stone-400">First image will be the cover image</span>
             </div>
-            
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#1A1918] dark:bg-white text-white dark:text-stone-950 px-4 py-2 text-xs font-bold transition hover:opacity-90">
-              <ImagePlus size={14} /> {uploading ? "Uploading..." : "Select Images (Max 5)"}
-              <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploading || imageUrls.length >= 5} className="hidden" />
-            </label>
 
-            {/* 5 Preview Slots with Remove X Buttons */}
-            <div className="grid grid-cols-5 gap-2 pt-1">
-              {[0, 1, 2, 3, 4].map((slotIndex) => {
-                const imgUrl = imageUrls[slotIndex];
-                return (
-                  <div key={slotIndex} className="relative aspect-square rounded-xl border border-stone-200 dark:border-stone-700 overflow-hidden bg-stone-100 dark:bg-stone-800 flex items-center justify-center group">
-                    {imgUrl ? (
-                      <>
-                        <img src={imgUrl} alt="" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(slotIndex)}
-                          className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-90 hover:opacity-100 transition shadow-sm"
-                          title="Remove image"
-                        >
-                          <X size={10} />
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-[10px] text-stone-400 font-bold">#{slotIndex + 1}</span>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {/* Existing Image Slots with Remove Button */}
+              {formData.images.map((imgSrc, index) => (
+                <div
+                  key={index}
+                  className="relative aspect-square rounded-2xl overflow-hidden border border-stone-200 bg-stone-50 group"
+                >
+                  <img
+                    src={getProductImageUrl(imgSrc)}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(index)}
+                    className="absolute top-1.5 right-1.5 p-1 bg-black/70 hover:bg-black text-white rounded-full transition shadow-sm"
+                    title="Remove Image"
+                  >
+                    <X size={12} />
+                  </button>
+                  {index === 0 && (
+                    <span className="absolute bottom-1.5 left-1.5 bg-[#B08D57] text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+                      Primary
+                    </span>
+                  )}
+                </div>
+              ))}
+
+              {/* Upload Trigger (visible if less than 5 images) */}
+              {formData.images.length < 5 && (
+                <label className="aspect-square rounded-2xl border-2 border-dashed border-stone-200 hover:border-[#B08D57] bg-stone-50/50 hover:bg-stone-50 flex flex-col items-center justify-center cursor-pointer transition p-2 text-center group">
+                  <Upload size={20} className="text-stone-400 group-hover:text-[#B08D57] mb-1 transition" />
+                  <span className="text-[10px] font-bold text-stone-600 group-hover:text-[#B08D57]">
+                    Upload Image
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer pt-1">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="accent-[#B08D57] h-4 w-4"
-            />
-            <span className="text-sm font-semibold">Product is Active</span>
-          </label>
+          {/* Submit Action Button */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full mt-4 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50"
+          >
+            {submitting
+              ? "Saving Product..."
+              : editingProduct
+                ? "Update Product"
+                : "Add Product"
+            }
+          </button>
+        </form>
+      </div>
 
-          {/* Full-width Submit Button */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              className="w-full py-3.5 bg-[#1A1918] text-white dark:bg-white dark:text-stone-955 font-bold text-xs uppercase tracking-wider rounded-2xl hover:bg-[#33302C] dark:hover:bg-stone-200 transition-colors shadow-soft"
-            >
-              {editingId ? "Update Product" : "Add Product"}
-            </button>
-            {editingId && (
+      {/* Modal Dialog: + Add New Category */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-2xl border border-stone-200 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <h3 className="font-serif font-bold text-base text-stone-900">Add New Category</h3>
               <button
                 type="button"
-                onClick={resetForm}
-                className="w-full mt-2 py-2.5 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 font-bold text-xs uppercase tracking-wider rounded-2xl hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+                onClick={() => {
+                  setIsCategoryModalOpen(false);
+                  setNewCategoryName("");
+                  setCategoryError("");
+                }}
+                className="text-stone-400 hover:text-stone-700 transition"
               >
-                Cancel Editing
+                <X size={18} />
               </button>
-            )}
-          </div>
-        </form>
+            </div>
 
-        {/* Product Table View */}
-        <div className="lg:col-span-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 shadow-sm overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-200 dark:border-stone-800 text-xs font-bold uppercase text-stone-500">
-                <th className="pb-3">Image</th>
-                <th className="pb-3">Name</th>
-                <th className="pb-3">Price</th>
-                <th className="pb-3">Stock</th>
-                <th className="pb-3">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-              {products.map((prod) => (
-                <tr key={prod.id}>
-                  <td className="py-3">
-                    <img
-                      src={prod.image_url || prod.image || safeGetProductImageUrl(prod)}
-                      alt={prod.name || "Product"}
-                      className="w-10 h-10 object-cover rounded-lg"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/hero-keychain.svg";
-                      }}
-                    />
-                  </td>
-                  <td className="py-3">
-                    <p className="font-bold">{prod.name}</p>
-                    <p className="text-xs text-stone-500 flex items-center gap-1">
-                      <Tag size={10} /> {prod.categories?.name}
-                    </p>
-                  </td>
-                  <td className="py-3">
-                    <span className="font-semibold">₹{prod.price}</span>
-                  </td>
-                  <td className="py-3">
-                    <span className={(prod.stock ?? ((prod.stock_d || 0) + (prod.stock_k || 0))) <= 5 ? "text-red-500 font-bold" : "font-semibold"}>
-                      {prod.stock ?? ((prod.stock_d || 0) + (prod.stock_k || 0))} units
-                    </span>
-                  </td>
-                  <td className="py-3">
-                    <div className="flex gap-2">
-                      <button onClick={() => handleEdit(prod)} className="p-1.5 rounded-full text-stone-500 hover:bg-stone-100">
-                        <Edit size={16} />
-                      </button>
-                      <button onClick={() => handleDelete(prod.id)} className="p-1.5 rounded-full text-red-500 hover:bg-red-50">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            <form onSubmit={handleCreateCategory} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => {
+                    setNewCategoryName(e.target.value);
+                    if (categoryError) setCategoryError("");
+                  }}
+                  placeholder="e.g. Leather, Neon, Vintage"
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-sm outline-none focus:border-[#B08D57] transition shadow-xs"
+                  autoFocus
+                />
+                {categoryError && (
+                  <p className="text-xs text-rose-500 font-medium mt-1">{categoryError}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCategoryModalOpen(false);
+                    setNewCategoryName("");
+                    setCategoryError("");
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingCategory}
+                  className="px-5 py-2 rounded-xl bg-[#1A1918] hover:bg-[#33302C] text-white text-xs font-bold transition disabled:opacity-50"
+                >
+                  {savingCategory ? "Saving..." : "Save Category"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
+      )}
+
+      {/* Existing Products List Table */}
+      <div className="bg-white border border-stone-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <div className="flex items-center justify-between pb-4 border-b border-stone-100 mb-6">
+          <h2 className="text-lg font-bold font-serif text-stone-900">
+            Catalog Inventory ({products.length})
+          </h2>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12 text-stone-400 text-xs">Loading products catalog...</div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-12 text-stone-400 text-xs">No products in catalog yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-stone-200 text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                  <th className="pb-3">Product</th>
+                  <th className="pb-3">Category</th>
+                  <th className="pb-3">Price</th>
+                  <th className="pb-3">Total Stock</th>
+                  <th className="pb-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {products.map((prod) => {
+                  const categoryName =
+                    categories.find((c) => String(c.id) === String(prod.category_id))?.name ||
+                    prod.categories?.name ||
+                    "General";
+
+                  return (
+                    <tr key={prod.id} className="hover:bg-stone-50/60 transition group">
+                      <td className="py-3 flex items-center gap-3">
+                        <img
+                          src={getProductImageUrl(prod.image_url)}
+                          alt={prod.name}
+                          className="w-11 h-11 object-cover rounded-xl border border-stone-200 shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = "/hero-keychain.svg";
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-bold text-stone-900 text-xs sm:text-sm truncate">
+                            {prod.name}
+                          </p>
+                          <p className="text-[11px] text-stone-400 truncate max-w-xs">
+                            {prod.description || "No description"}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-3">
+                        <span className="inline-block bg-stone-100 text-stone-700 text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                          {categoryName}
+                        </span>
+                      </td>
+                      <td className="py-3 font-semibold text-stone-900 text-xs sm:text-sm">
+                        ₹{prod.discount_price || prod.price}
+                        {prod.discount_price && (
+                          <span className="text-[10px] text-stone-400 line-through ml-1.5">
+                            ₹{prod.price}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 text-xs font-bold text-stone-700">
+                        {prod.stock ?? prod.inventory ?? 0} units
+                      </td>
+                      <td className="py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(prod)}
+                            className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition"
+                            title="Edit Product"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(prod.id, prod.name)}
+                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
+                            title="Delete Product"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
